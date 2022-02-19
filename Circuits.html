@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" width="device-width," initial-scale="1.0," maximum-scale="1.0," user-scalable="0">
+    <style>
+      body {padding: 0; margin: 0;}
+      #itest {
+        position: absolute;
+        top: 1em;
+        right: 1em;
+        padding: .75em 1.5em;
+      }
+      #editor-iframe {
+        position: absolute;
+        top: 1em;
+        right: 1em;
+        z-index: 100;
+      }
+    </style>
+    <script src="Circuits_files/p5.js"></script>
+    <script src="Circuits_files/sketch.js"></script>
+    <script src="Circuits_files/SliderMaker.js"></script>
+    <script src="Circuits_files/OpMenu.js"></script>
+    <script src="Circuits_files/OpMenuItem.js"></script>
+    <script src="Circuits_files/OperatorMaker.js"></script>
+    <script src="Circuits_files/NumMaker.js"></script>
+    <script src="Circuits_files/WireMaker.js"></script>
+  </head>
+  <body>
+
+    <canvas id="view"></canvas>
+
+    <button id="itest" class="click-me" value="open editor">Click Me<button/>
+    <script type="text/javascript">
+      let button = document.getElementById('itest');
+      let iframe;
+
+      //  Create iframe on button click
+      button.addEventListener('click', (event) => {
+        console.log('click', event)
+        iframe = document.createElement('iframe')
+        iframe.setAttribute('src', 'Circuits2.html')
+        iframe.setAttribute('id', 'editor-iframe')
+        iframe.setAttribute('width', myCanvas.width)
+        iframe.setAttribute('height', myCanvas.height)
+        document.body.appendChild(iframe)
+      })
+
+      // Listen for iframe message to close and reload
+      window.addEventListener("message", (event) => {
+        console.log('message', event)
+        if (event.data == 'done') {
+          document.body.removeChild(iframe)
+        }
+      })
+      iframe.addEventListener("message", (event) => {
+        console.log('message', event)
+        if (event.data == 'done') {
+          document.body.removeChild(iframe)
+        }
+      })
+
+
+    </script>
+
+  </body>
+</html>

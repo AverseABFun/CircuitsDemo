@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" width="device-width," initial-scale="1.0," maximum-scale="1.0," user-scalable="0">
+    <style>
+      body {padding: 0; margin: 0;}
+      #itest {
+        position: absolute;
+        top: 1em;
+        right: 1em;
+      }
+    </style>
+    <script src="Circuits_files/p5.js"></script>
+    <script src="Circuits_files/sketch.js"></script>
+    <script src="Circuits_files/SliderMaker.js"></script>
+    <script src="Circuits_files/OpMenu.js"></script>
+    <script src="Circuits_files/OpMenuItem.js"></script>
+    <script src="Circuits_files/OperatorMaker.js"></script>
+    <script src="Circuits_files/NumMaker.js"></script>
+    <script src="Circuits_files/WireMaker.js"></script>
+  </head>
+  <body>
+
+    <canvas id="view"></canvas>
+
+    <button id="itest" class="click-me" value="Save and quit" >Save and quit</button>
+    <script type="text/javascript">
+      let button = document.getElementById('itest');
+
+
+      button.addEventListener('click', (event) => {
+        window.top.postMessage('done','*')
+      })
+
+
+    </script>
+
+  </body>
+</html>

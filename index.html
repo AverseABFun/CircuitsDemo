@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
+    <link rel="stylesheet" href="style.css" />
+    <script src="p5.min.js"></script>
+    <script src="vars.js"></script>
+    <script src="canvas.js"></script>
+    <script src="child.js"></script>
+    <script src="number.js"></script>
+    <script src="operator.js"></script>
+    <script src="wire.js"></script>
+    <script src="editor.js"></script>
+    <script src="sketch.js"></script>
+  </head>
+  <body>
+
+    <div id="actions">
+      <div id="operators">
+        <button
+          id="create-number"
+          title="Create new Number."
+          type="button"
+          class="create-child"> 1 </button>
+        <button
+          id="create-adder"
+          title="Create new Adder."
+          type="button"
+          class="create-child"> + </button>
+        <button
+          id="create-multiplier"
+          title="Create new Multiplier."
+          type="button"
+          class="create-child"> x </button>
+        <button
+          id="create-exponentiator"
+          title="Create new Exponentiator."
+          type="button"
+          class="create-child"> ^ </button>
+      </div>
+
+      <!--
+      <div id="box-actions">
+        <h4>Compound Operator Library</h4>
+        <button id="create-box" title="Create new compound operator in operator editor."> new </button>
+        <button id="export-box" title="Export selected operations as compound operator."> export </button>
+        <div class="row">
+          <select id="operator-library">
+            <option label="Please choose one..." value=""></option>
+          </select>
+          <button id="import-box" title="Add compound operator from library."> add </button>
+        </div>
+      </div>
+      -->
+
+      <div id="information">
+        <h4>Information</h4>
+        <button id="toggle-information" title="Show information about the Digital Abacus." class="show">
+          <span class="show">Show</span>
+          <span class="hide">Hide</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="circuit-canvas" class="active"></div>
+
+    <div id="info-text" class="hidden">
+      <div>
+        <p>
+          You can click/drag <strong>Numbers</strong>, <strong>Adders</strong>,
+          <strong>Multipliers</strong>, and <strong>Exponentiators</strong> onto the canvas.
+          Connect them by click/dragging from an <strong>Output</strong> (circle
+          with an arrow pointing out) to an <strong>Input</strong> (circle with side arrows).
+          Change an input value by clicking it and dragging to the left or right.
+        </p>
+
+        <p>
+          <strong>SELECTION</strong> - Select multiple numbers and operators by
+          holding shift and dragging a select box or by holding shift and clicking
+          on them.  Clicking on the canvas will deselect all.  Clicking on a number
+          or operator without  holding shift will deselect all others.
+        </p>
+
+        <p>
+          <strong>DELETION</strong> - Pressing the backspace key will delete all selected items.
+        </p>
+
+        <p>
+          <strong>REVERSAL</strong> - Double click any free input or output to switch between
+          free and bound modes.
+        </p>
+
+        <p>
+          <strong>ZOOM</strong> - Use the mousewheel or the "+" and "-" keys to zoom in and out.
+        </p>
+
+      </div>
+    </div>
+
+  </body>
+</html>

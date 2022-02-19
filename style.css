@@ -1,0 +1,108 @@
+body,
+#circuit-canvas,
+#box-editor-canvas {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.hidden {
+  width: 0;
+  height: 0;
+  left: -100%;
+  opacity: 0;
+}
+
+/*  Buttons  */
+#actions {
+  position: absolute;
+  z-index: 50;
+  width: 200px;
+  margin: 1.5em 2em;
+}
+#actions > div,
+#actions div.row {
+  width: 100%;
+  clear: both;
+}
+#actions > div {
+  display: grid;
+}
+/*  Operators  */
+#operators {
+  grid-template-columns: 1fr 1fr;
+}
+#operators button {
+  clear: both;
+  margin: .5em auto;
+  padding: 1em;
+  border: 3px #000;
+  border-radius: 2em;
+  font-size: 2em;
+  line-height: .25em;
+  font-weight: bold;
+}
+#box-actions button {
+  margin: .25em 0;
+}
+
+/*  Box Editor  */
+#box-editor-canvas {
+  display: none;
+  position: absolute;
+  left: 0;
+  top:0;
+}
+
+#box-editor-canvas.active {
+  display: block;
+  z-index: 100;
+}
+
+#box-editor-canvas:not(.active) canvas {
+  display: none;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute;
+  left: -2000px;
+}
+
+/*  Information  */
+button#toggle-information.show .hide,
+button#toggle-information:not(.show) .show {
+  display: none;
+}
+#info-text {
+  position: absolute;
+  transition: all .3s;
+}
+#info-text:not(.hidden) {
+  width: 100%;
+  height: 100vh;
+}
+#info-text.hidden > div {
+  display: none;
+}
+#info-text > div {
+  overflow-y: scroll;
+  margin: 4em auto;
+  padding: 2em;
+  background: rgba(0, 0, 0, 0.70);
+  color: #fff;
+  max-width: 600px;
+  max-height: calc(100vh - 12em);
+}
+
+@media only screen and (max-width: 900px) {
+  #info-text:not(.hidden) {
+    --info-padding-width: calc(200px - 8em);
+    --info-content-width: calc(100% - --info-padding-width);
+    padding-left: var(--info-padding-width);
+    width: var(--info-content-width);
+  }
+
+  #info-text > div {
+    max-width: calc(100% - 12em - 200px);
+  }
+}
