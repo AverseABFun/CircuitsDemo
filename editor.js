@@ -1151,5 +1151,43 @@ class Editor extends CanvasChild {
 
   }
 
+  /**
+   * @method _serialize
+   *
+   *  Get an object containing the serialized state of every object in the scene.
+   *
+   * @return {<Object>} the full state of the editor represented as an object.
+   */
+  _serialize() {
+    // TODO
+  }
 
+  /**
+   * @method _deserialize
+   *
+   *  @param {Object} the serialized object to restore editor state from.
+   */
+  _deserialize() {
+    // TODO
+  }
+
+  /**
+   * @method _writeURL
+   *
+   *  Write the serialized state of the editor to the URL
+   */
+  _writeURL() {
+    // TODO
+  }
+
+  /**
+   * @method _readURL
+   *
+   *  Fetch the editor state stored in the URL, if any exists.
+   * 
+   * @return {<Object>} the state of the editor to restore from.
+   */
+  _readURL() {
+    // TODO
+  }
 };
