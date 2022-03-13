@@ -562,7 +562,7 @@ class Editor extends CanvasChild {
           this.myNumbers[numId] = numId
         }
       });
-      this.myWires.splice(childId, 1)
+      delete this.myWires[childId]
     }
 
     //  Unselect and Delete
