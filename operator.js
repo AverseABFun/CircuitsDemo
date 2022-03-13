@@ -373,6 +373,35 @@ class Operator extends EditorChild {
     }
   }
 
+	/**
+	 * @method serialize
+	 * Get a static object representation of this operator
+	 *
+	 * @return {<Object>} the state of this operator, serialized to an object
+	 */
+  serialize() {
+    return {
+      x: this.globalX,
+      y: this.globalY,
+      input1: this.myInput1.serialize(),
+      input2: this.myInput2.serialize(),
+      output: this.myOutput.serialize(),
+    }
+  }
+
+	/**
+	 * @method deserialize
+	 * Restore state from a static object representation of this operator
+	 *
+	 * @param {<Object>} state - the state of this operator, serialized to an object
+	 */
+  deserialize(state) {
+    this.setPosition(state.x, state.y)
+    
+    this.myInput1.deserialize(state.input1)
+    this.myInput2.deserialize(state.input2)
+    this.myOutput.deserialize(state.output)
+  }
 }
 
 
@@ -430,6 +459,13 @@ class Adder extends Operator {
     shiftY = this.compareShifts(upperY, lowerY)
     movingNode.shift( shiftX, shiftY );
 
+  }
+
+  serialize() {
+    return {
+      ...super.serialize(),
+      type: 'Adder',
+    }
   }
 }
 
@@ -511,6 +547,13 @@ class Multiplier extends Operator {
     movingNode.shift( shiftX, shiftY );
 
   }
+
+  serialize() {
+    return {
+      ...super.serialize(),
+      type: 'Multiplier',
+    }
+  }
 }
 
 /**
@@ -589,5 +632,12 @@ class Exponentiator extends Operator {
     shiftY = this.compareShifts(upperY, lowerY)
     movingNode.shift( shiftX, shiftY );
 
+  }
+
+  serialize() {
+    return {
+      ...super.serialize(),
+      type: 'Exponentiator',
+    }
   }
 }

@@ -13,8 +13,8 @@ class Editor extends CanvasChild {
   //  Store Children Numbers and Connections
   idIterator = 0;
   myChildren = [];
-  myNumbers = [];
-  myOperators = [];
+  myNumbers = {};
+  myOperators = {};
   myWires = [];
   freeNodes = [];
   freeNodePaths = [];
@@ -81,6 +81,8 @@ class Editor extends CanvasChild {
   gridSize = this.childSize*4;
   stageSize = this.gridSize*(this.scaleMax/this.scaleMin);
 
+  // Serialization
+  deserializing
 
   constructor (id) {
     super()
@@ -127,7 +129,10 @@ class Editor extends CanvasChild {
       p.mouseOver = false
     });
 
-
+    // Read URL and deserialize if a URL state object is present
+    const obj = this._readURL()
+    if (obj)
+      this._deserialize(obj)
   }
 
 
@@ -407,8 +412,10 @@ class Editor extends CanvasChild {
   addNumber (type = 0, setCount = 0, coord = this._coordCanvasToGlobal()) {
     let num = this.addChild("ComplexNumber", coord, [setCount, type])
 
+    console.log('Creating number. myNumbers:', this.myNumbers)
+
     //  Start Naked Numbers in Move mode
-    if (type === 0) {
+    if (type === 0 && !this.deserializing) {
       this.overChildren = []
       this.overChildren[num.id] = num.id
     }
@@ -416,8 +423,11 @@ class Editor extends CanvasChild {
     //  Store Reference
     this.myNumbers[num.id] = num.id
 
-    return num
+    // Save state to URL
+    if (!this.deserializing && type == 0)
+      this._writeURL()
 
+    return num
   }
 
 
@@ -432,6 +442,7 @@ class Editor extends CanvasChild {
     let op = this.addChild(type, coord)
 
     //  Add Inputs and outputs
+    console.log('Creating operator. myNumbers:', this.myNumbers)
     let input1 = this.addNumber(1)
     let input2 = this.addNumber(1)
     let output = this.addNumber(2)
@@ -443,12 +454,19 @@ class Editor extends CanvasChild {
     op.iterate()
 
     //  Start Operators in Move mode
-    this.overChildren = []
-    this.overChildren[op.id] = op.id
+    if (!this.deserializing) {
+      this.overChildren = []
+      this.overChildren[op.id] = op.id
+    }
 
     //  Store References
     this.myOperators[op.id] = [input1.id, input2.id, output.id]
 
+    // Save state to URL
+    if (!this.deserializing)
+      this._writeURL()
+
+    return op
   }
 
 
@@ -572,14 +590,14 @@ class Editor extends CanvasChild {
    */
   operate() {
     this.myWires.forEach((wire, wireId) => {
-      if (this.myChildren[wireId]) this.myChildren[wireId].update()
+      if (this.myChildren[wireId])
+        this.myChildren[wireId].update()
     })
 
-    this.myOperators.forEach((operator, opId) => {
-      if (this.myChildren[opId]) this.myChildren[opId].iterate()
-    })
-
-
+    for (const [operator, opId] of Object.entries(this.myOperators)) {
+      if (this.myChildren[opId])
+        this.myChildren[opId].iterate()
+    }
   }
 
 
@@ -1056,6 +1074,9 @@ class Editor extends CanvasChild {
       this.connectWire()
     }
 
+    if (['Move', 'Pan', 'Scale', 'Scrub', 'Connecting'].includes(this.mouseState))
+      this._writeURL()
+
     //  Remove any dangling wires
     if ( this.mousePressVars.wire !== false ) {
       this.removeChild( this.mousePressVars.wire )
@@ -1148,7 +1169,6 @@ class Editor extends CanvasChild {
 
       return id
     }
-
   }
 
   /**
@@ -1159,7 +1179,23 @@ class Editor extends CanvasChild {
    * @return {<Object>} the full state of the editor represented as an object.
    */
   _serialize() {
-    // TODO
+    // We only want to serialize naked numbers, since inputs and outputs are serialized within operators
+    const nakedNumbers = Object.values(this.myNumbers).filter(v => {
+      const n = this.myChildren[v]
+      return n.type == n.NAKED
+    })
+
+    const numbers = nakedNumbers.map(v => this.myChildren[v].serialize())
+    
+    const operators = Object.entries(this.myOperators).map(entry => this.myChildren[entry[0]].serialize())
+
+    console.log('Operators:', this.myOperators)
+    console.log('Numbers:', this.myNumbers)
+
+    return {
+      numbers,
+      operators,
+    }
   }
 
   /**
@@ -1167,8 +1203,23 @@ class Editor extends CanvasChild {
    *
    *  @param {Object} the serialized object to restore editor state from.
    */
-  _deserialize() {
-    // TODO
+  _deserialize(obj) {
+    this.deserializing = true
+
+    obj.numbers.forEach(v => {
+      console.log(`Spawning number of value ${v.real}`)
+      const number = this.addNumber()
+      number.deserialize(v)
+    })
+
+    obj.operators.forEach(v => {
+      console.log(`Spawning operator of type ${v.type}`)
+      const operator = this.addOperator(v.type)
+      operator.deserialize(v)
+    })
+  
+
+    this.deserializing = false
   }
 
   /**
@@ -1177,7 +1228,20 @@ class Editor extends CanvasChild {
    *  Write the serialized state of the editor to the URL
    */
   _writeURL() {
-    // TODO
+    // Serialized object
+    const obj = this._serialize()
+    // Raw string representation
+    const str = JSON.stringify(obj)
+    // Encoded string representation
+    const enc = encodeURIComponent(str)
+    // Base64 string representation
+    const b64 = btoa(enc)
+    // URL to write to window
+    const url = location.protocol+'//'+location.hostname+location.pathname+'?'+b64
+
+    console.log(obj)
+
+    history.pushState(obj, 'Circuits', url)
   }
 
   /**
@@ -1188,6 +1252,18 @@ class Editor extends CanvasChild {
    * @return {<Object>} the state of the editor to restore from.
    */
   _readURL() {
-    // TODO
+    const query = location.search
+
+    if (!query)
+      return null
+    
+    const b64 = query.slice(1)
+    const enc = atob(b64)
+    const str = decodeURIComponent(enc)
+    const obj = JSON.parse(str)
+
+    console.log(str)
+
+    return obj
   }
 };

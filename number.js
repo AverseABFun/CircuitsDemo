@@ -48,7 +48,6 @@ class ComplexNumber extends EditorChild {
 			...this.talkEvents,
 			"ComplexNumberUpdate",
 		]
-
 	}
 
 
@@ -581,4 +580,30 @@ class ComplexNumber extends EditorChild {
 		return circle
 	}
 
+	/**
+	 * @method serialize
+	 * Get a static object representation of this number
+	 *
+	 * @return {<Object>} the state of this number, serialized to an object
+	 */
+  serialize() {
+    return {
+      x: this.globalX,
+      y: this.globalY,
+      real: this.real,
+      imaginary: this.imaginary,
+    }
+  }
+
+	/**
+	 * @method deserialize
+	 * Restore state from a static object representation of this number
+	 *
+	 * @param {<Object>} state - the state of this number, serialized to an object
+	 */
+  deserialize(state) {
+    this.setPosition(state.x, state.y)
+    this.real = state.real
+    this.imaginary = state.imaginary
+  }
 }
