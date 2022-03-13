@@ -808,6 +808,8 @@ class Editor extends CanvasChild {
             path: reversalPath
           }
           this.emit('Reverse', detail)
+
+          this._writeURL()
         }
       }
 
