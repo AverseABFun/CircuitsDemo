@@ -1192,6 +1192,8 @@ class Editor extends CanvasChild {
     console.log('Wires:', this.myWires)
 
     return {
+      scale: this.viewScale,
+      center: this.viewCenter,
       numbers,
       operators,
       wires,
@@ -1205,6 +1207,10 @@ class Editor extends CanvasChild {
    */
   _deserialize(obj) {
     this.deserializing = true
+
+    this.viewScale = obj.scale
+    this.viewCenter[0] = obj.center[0]
+    this.viewCenter[1] = obj.center[1]
 
     const numberMap = {}
     const reversedNumbers = []
