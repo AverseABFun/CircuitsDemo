@@ -1187,7 +1187,7 @@ class Editor extends CanvasChild {
 
     const numbers = nakedNumbers.map(v => this.myChildren[v].serialize())
     
-    const operators = Object.entries(this.myOperators).map(entry => this.myChildren[entry[0]].serialize())
+    const operators = Object.keys(this.myOperators).map(v => this.myChildren[v].serialize())
 
     console.log('Operators:', this.myOperators)
     console.log('Numbers:', this.myNumbers)
