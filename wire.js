@@ -409,4 +409,27 @@ class Wire extends EditorChild {
   	}
   }
 
+	/**
+	 * @method serialize
+	 * Get a static object representation of this wire
+	 *
+	 * @return {<Object>} the state of this wire, serialized to an object
+	 */
+  serialize() {
+    return {
+      id: this.id,
+      origin: this.origin.id,
+      target: this.target.id,
+    }
+  }
+
+	/**
+	 * @method deserialize
+	 * Restore state from a static object representation of this wire
+	 *
+	 * @param {<Object>} state - the state of this wire, serialized to an object
+	 */
+  deserialize(state) {
+    // At the moment, there are no internal deserialization steps required for wires.
+  }
 }

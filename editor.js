@@ -12,10 +12,10 @@ class Editor extends CanvasChild {
 
   //  Store Children Numbers and Connections
   idIterator = 0;
-  myChildren = [];
+  myChildren = {};
   myNumbers = {};
   myOperators = {};
-  myWires = [];
+  myWires = {};
   freeNodes = [];
   freeNodePaths = [];
   selectedNodes = [];
@@ -203,8 +203,7 @@ class Editor extends CanvasChild {
   }
 
   drawChildren () {
-    const eChildren = this.myChildren[Symbol.iterator]()
-    for (let child of eChildren) {
+    for (let child of Object.values(this.myChildren)) {
       if (child) child.draw()
     }
   }
@@ -485,32 +484,30 @@ class Editor extends CanvasChild {
     //  Store id for connection
     this.mousePressVars.wire = wire.id
 
+    return wire
   }
 
   /**
    * @method connectWire
    *
-   * @param {<Number>}	targetId - EditorChild.id property which is also the array key in this.myChildren
+   * @param {<Number>}	targetId - EditorChild.id property which is also the number array key in this.myChildren
+   * @param {<Number>}	wireId - EditorChild.id property which is also the wire array key in this.myChildren
    *
    */
-  connectWire (targetId = this._getChildRef(this.overInputs)) {
-    let wireId = this.mousePressVars.wire
+  connectWire (targetId = this._getChildRef(this.overInputs), wireId = this.mousePressVars.wire) {
+    //  add wire target
+    this.myChildren[wireId].setTarget(this.myChildren[targetId])
+    let originId = this.myChildren[wireId].origin.id
+    //  store wire in myWires
+    this.myWires[wireId] = [originId, targetId]
+    //  store wire references in myNumbers
+    this.myWires[wireId].forEach((id, i) => {
+      if (this.myNumbers[id] == id) this.myNumbers[id] = []
+      this.myNumbers[id].push(wireId)
+    });
 
-    if (wireId) {
-      //  add wire target
-      this.myChildren[wireId].setTarget(this.myChildren[targetId])
-      let originId = this.myChildren[wireId].origin.id
-      //  store wire in myWires
-      this.myWires[wireId] = [originId, targetId]
-      //  store wire references in myNumbers
-      this.myWires[wireId].forEach((id, i) => {
-        if (this.myNumbers[id] == id) this.myNumbers[id] = []
-        this.myNumbers[id].push(wireId)
-      });
-
-      //  delete reference to prevent wire deletion in mouseReleased
-      this.mousePressVars.wire = false
-    }
+    //  delete reference to prevent wire deletion in mouseReleased
+    this.mousePressVars.wire = false
   }
 
 
@@ -577,7 +574,6 @@ class Editor extends CanvasChild {
       if (typeof this.myChildren[childId].removeFromEditor === 'function') this.myChildren[childId].removeFromEditor(this)
       this.myChildren[childId] = null
     }
-
   }
 
 
@@ -589,7 +585,7 @@ class Editor extends CanvasChild {
    *  Wires first.  Then operators.
    */
   operate() {
-    this.myWires.forEach((wire, wireId) => {
+    Object.keys(this.myWires).forEach(wireId => {
       if (this.myChildren[wireId])
         this.myChildren[wireId].update()
     })
@@ -1179,8 +1175,9 @@ class Editor extends CanvasChild {
    * @return {<Object>} the full state of the editor represented as an object.
    */
   _serialize() {
+    console.log('My Children', this.myChildren)
     // We only want to serialize naked numbers, since inputs and outputs are serialized within operators
-    const nakedNumbers = Object.values(this.myNumbers).filter(v => {
+    const nakedNumbers = Object.keys(this.myNumbers).filter(v => {
       const n = this.myChildren[v]
       return n.type == n.NAKED
     })
@@ -1189,12 +1186,16 @@ class Editor extends CanvasChild {
     
     const operators = Object.keys(this.myOperators).map(v => this.myChildren[v].serialize())
 
+    const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
+
     console.log('Operators:', this.myOperators)
     console.log('Numbers:', this.myNumbers)
+    console.log('Wires:', this.myWires)
 
     return {
       numbers,
       operators,
+      wires,
     }
   }
 
@@ -1206,18 +1207,32 @@ class Editor extends CanvasChild {
   _deserialize(obj) {
     this.deserializing = true
 
+    const numberMap = {}
+
     obj.numbers.forEach(v => {
-      console.log(`Spawning number of value ${v.real}`)
+      console.log(`Spawning number of value ${v.real}:`, v)
       const number = this.addNumber()
       number.deserialize(v)
+      numberMap[v.id] = number.id
     })
 
     obj.operators.forEach(v => {
-      console.log(`Spawning operator of type ${v.type}`)
+      console.log(`Spawning operator of type ${v.type}:`, v)
       const operator = this.addOperator(v.type)
       operator.deserialize(v)
+      numberMap[v.input1.id] = operator.myInput1.id
+      numberMap[v.input2.id] = operator.myInput2.id
+      numberMap[v.output.id] = operator.myOutput.id
     })
-  
+
+    obj.wires.forEach(v => {
+      console.log(`Spawning wire between ${v.origin}–${v.target}:`, v)
+      console.log(obj.numbers)
+      const originNumber = this.myChildren[numberMap[v.origin]]
+      const targetNumber = this.myChildren[numberMap[v.target]]
+      const wire = this.addWire(originNumber.id)
+      this.connectWire(targetNumber.id, wire.id)
+    })
 
     this.deserializing = false
   }

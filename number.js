@@ -588,6 +588,7 @@ class ComplexNumber extends EditorChild {
 	 */
   serialize() {
     return {
+      id: this.id,
       x: this.globalX,
       y: this.globalY,
       real: this.real,

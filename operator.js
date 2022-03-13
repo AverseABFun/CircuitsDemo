@@ -381,6 +381,7 @@ class Operator extends EditorChild {
 	 */
   serialize() {
     return {
+      id: this.id,
       x: this.globalX,
       y: this.globalY,
       input1: this.myInput1.serialize(),
