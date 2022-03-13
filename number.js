@@ -593,6 +593,7 @@ class ComplexNumber extends EditorChild {
       y: this.globalY,
       real: this.real,
       imaginary: this.imaginary,
+      reversed: this.reversed,
     }
   }
 
@@ -606,5 +607,6 @@ class ComplexNumber extends EditorChild {
     this.setPosition(state.x, state.y)
     this.real = state.real
     this.imaginary = state.imaginary
+    this.reversed = state.reversed
   }
 }

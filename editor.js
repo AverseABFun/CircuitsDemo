@@ -590,9 +590,8 @@ class Editor extends CanvasChild {
         this.myChildren[wireId].update()
     })
 
-    for (const [operator, opId] of Object.entries(this.myOperators)) {
-      if (this.myChildren[opId])
-        this.myChildren[opId].iterate()
+    for (const opId of Object.keys(this.myOperators)) {
+      this.myChildren[opId].iterate()
     }
   }
 
@@ -1208,18 +1207,26 @@ class Editor extends CanvasChild {
     this.deserializing = true
 
     const numberMap = {}
+    const reversedNumbers = []
 
     obj.numbers.forEach(v => {
       console.log(`Spawning number of value ${v.real}:`, v)
       const number = this.addNumber()
+      
       number.deserialize(v)
+      
       numberMap[v.id] = number.id
+      
+      if (v.reversed)
+        reversedNumbers.push(number)
     })
 
     obj.operators.forEach(v => {
       console.log(`Spawning operator of type ${v.type}:`, v)
       const operator = this.addOperator(v.type)
+      
       operator.deserialize(v)
+      
       numberMap[v.input1.id] = operator.myInput1.id
       numberMap[v.input2.id] = operator.myInput2.id
       numberMap[v.output.id] = operator.myOutput.id
@@ -1227,12 +1234,22 @@ class Editor extends CanvasChild {
 
     obj.wires.forEach(v => {
       console.log(`Spawning wire between ${v.origin}–${v.target}:`, v)
-      console.log(obj.numbers)
       const originNumber = this.myChildren[numberMap[v.origin]]
       const targetNumber = this.myChildren[numberMap[v.target]]
       const wire = this.addWire(originNumber.id)
       this.connectWire(targetNumber.id, wire.id)
+      
+      wire.deserialize(v)
     })
+
+    // For any numbers that were reversed, swap their origin and target. This must happen after wire connections are made.
+    for (const number of reversedNumbers) {
+      const origin = number.origin
+      const target = number.target
+      
+  		number.origin = target
+	  	number.target = origin
+    }
 
     this.deserializing = false
   }

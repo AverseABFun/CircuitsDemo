@@ -420,6 +420,7 @@ class Wire extends EditorChild {
       id: this.id,
       origin: this.origin.id,
       target: this.target.id,
+      reversed: this.reversed,
     }
   }
 
@@ -430,6 +431,6 @@ class Wire extends EditorChild {
 	 * @param {<Object>} state - the state of this wire, serialized to an object
 	 */
   deserialize(state) {
-    // At the moment, there are no internal deserialization steps required for wires.
+    this.reversed = state.reversed
   }
 }

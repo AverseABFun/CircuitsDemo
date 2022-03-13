@@ -387,6 +387,7 @@ class Operator extends EditorChild {
       input1: this.myInput1.serialize(),
       input2: this.myInput2.serialize(),
       output: this.myOutput.serialize(),
+      mode: this.mode,
     }
   }
 
@@ -402,6 +403,8 @@ class Operator extends EditorChild {
     this.myInput1.deserialize(state.input1)
     this.myInput2.deserialize(state.input2)
     this.myOutput.deserialize(state.output)
+
+    this.mode = state.mode
   }
 }
 
