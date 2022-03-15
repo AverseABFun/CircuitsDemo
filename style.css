@@ -7,6 +7,12 @@ body,
   width: 100%;
 }
 
+#notes {
+  pointer-events: none;
+}
+
+#notes
+
 .hidden {
   width: 0;
   height: 0;
