@@ -388,6 +388,7 @@ class Operator extends EditorChild {
       input2: this.myInput2.serialize(),
       output: this.myOutput.serialize(),
       mode: this.mode,
+      reversed: this.reversed,
     }
   }
 
@@ -405,6 +406,7 @@ class Operator extends EditorChild {
     this.myOutput.deserialize(state.output)
 
     this.mode = state.mode
+    this.reversed = state.reversed
   }
 }
 

@@ -1238,6 +1238,13 @@ class Editor extends CanvasChild {
       numberMap[v.input1.id] = operator.myInput1.id
       numberMap[v.input2.id] = operator.myInput2.id
       numberMap[v.output.id] = operator.myOutput.id
+
+      if (v.input1.reversed)
+        reversedNumbers.push(operator.myInput1)
+      if (v.input2.reversed)
+        reversedNumbers.push(operator.myInput2)
+      if (v.output.reversed)
+        reversedNumbers.push(operator.myOutput)
     })
 
     obj.wires.forEach(v => {
