@@ -16,6 +16,7 @@ class Editor extends CanvasChild {
   myNumbers = {};
   myOperators = {};
   myWires = {};
+  myNotes = {};
   freeNodes = [];
   freeNodePaths = [];
   selectedNodes = [];
@@ -83,6 +84,9 @@ class Editor extends CanvasChild {
 
   // Serialization
   deserializing
+
+  // DOM
+  notesLayerNode = document.querySelector('#notes-layer')
 
   constructor (id) {
     super()
@@ -467,6 +471,34 @@ class Editor extends CanvasChild {
 
     return op
   }
+  
+  /**
+   * @method addNote
+   *
+   * @param {<String>}	type - should name a class that extends Note class
+   * @param {<Array>}	coord - note position. Defaults to mouse position.
+   *
+   */
+  addNote (type = 'Note', coord = this._coordCanvasToGlobal() ) {
+    let note = this.addChild(type, coord)
+
+    //  Add Inputs and outputs
+    console.log('Creating operator. myNumbers:', this.myNumbers)
+
+    //  Start Operators in Move mode
+    if (!this.deserializing) {
+      this.overChildren = []
+      this.overChildren[note.id] = note.id
+    }
+
+    // Save state to URL
+    if (!this.deserializing)
+      this._writeURL()
+    
+    this.refreshNotesLayer()
+
+    return note
+  }
 
 
   /**
@@ -594,6 +626,29 @@ class Editor extends CanvasChild {
       this.myChildren[opId].iterate()
     }
   }
+  
+  /**
+   * @method refreshNotesLayer
+   *
+   * Refresh the notes layer transform to match the viewCenter/viewScale we are using for canvas rendering
+   */
+  refreshNotesLayer() {
+    console.log('Refreshing Notes Layer')
+    
+    const cameraX = this.viewCenter[0]
+    const cameraY = this.viewCenter[1]
+    console.log(`Camera: ${cameraX}, ${cameraY}`)
+    
+    const frameX = (0-cameraX)/this.viewScale
+    const frameY = (0-cameraY)/this.viewScale
+    console.log(`Frame: ${frameX}, ${frameY}`)
+
+    const screenX = (frameX*2-1)/this.viewWidth
+    const screenY = (frameY*2-1)/this.viewHeight
+    console.log(`Screen: ${screenX}, ${screenY}`)
+      
+    this.notesLayerNode.setAttribute('style', `transform: translate(${screenX}px, ${screenY}px) scale(${this.viewScale}, ${this.viewScale})`)
+  }
 
 
   /**
@@ -626,6 +681,9 @@ class Editor extends CanvasChild {
 
     //  Save the scale for the next frame
     this.viewScalePrevious = this.viewScale
+
+    // Refresh the transform properties of the notes layer
+    this.refreshNotesLayer()
   }
 
   onChildOut (event) {
@@ -916,6 +974,8 @@ class Editor extends CanvasChild {
             this.viewCenter[0] + event.movementX,
             this.viewCenter[1] + event.movementY
           ]
+
+          this.refreshNotesLayer()
 
           detail = {
             viewCenter: this.viewCenter

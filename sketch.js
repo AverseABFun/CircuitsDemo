@@ -19,6 +19,7 @@ function setupButtons () {
   let adderButton = document.getElementById('create-adder');
   let multButton = document.getElementById('create-multiplier');
   let expButton = document.getElementById('create-exponentiator');
+  let noteButton = document.getElementById('create-note');
   let infoButton = document.getElementById('toggle-information');
 
   numButton.addEventListener('mousedown', function (event) {
@@ -32,6 +33,9 @@ function setupButtons () {
   });
   expButton.addEventListener('mousedown', function (event) {
     mainCanvas.addOperator('Exponentiator')
+  });
+  noteButton.addEventListener('mousedown', function (event) {
+    mainCanvas.addNote()
   });
 
   infoButton.addEventListener('click', function (event) {

@@ -9,8 +9,9 @@ class Note extends EditorChild {
   text = "Click here to edit me"
 
   //  DOM
-  domNotes = document.querySelector('#notes-layer')
-  domEditor = document.querySelector('#notes-editor')
+  backgroundElement
+  pElementode
+  deleteButtonElement
   
 	constructor(x, y, setCount = 0, setType = 0) {
 		super(x, y, setType);
@@ -24,7 +25,17 @@ class Note extends EditorChild {
 			...this.talkEvents,
 		]
 
-    this.domNotes = 
+    this.backgroundElement = createDiv('')
+    this.backgroundElement.parent('notes-layer')
+    this.backgroundElement.class('note-background')
+
+    this.pElementode = createP('hello world')
+    this.pElementode.parent(this.backgroundElement)
+    this.pElementode.class('note-paragraph')
+    
+    this.deleteButtonElement = createButton('click me')
+    this.deleteButtonElement.parent(this.backgroundElement)
+    this.deleteButtonElement.class('note-delete-button')
 	}
 
 	/**
@@ -38,10 +49,20 @@ class Note extends EditorChild {
       id: this.id,
       x: this.globalX,
       y: this.globalY,
-      real: this.real,
-      imaginary: this.imaginary,
-      reversed: this.reversed,
+      text: this.text,
     }
+  }
+
+  /**
+   * @method onMove
+   *
+   * @param {<Object>}	event
+   *
+   */
+  onMove (event) {
+    super.onMove(event)
+
+    
   }
 
 	/**
