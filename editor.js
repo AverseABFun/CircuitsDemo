@@ -495,7 +495,7 @@ class Editor extends CanvasChild {
     if (!this.deserializing)
       this._writeURL()
     
-    this.refreshNotesLayer()
+    this._refreshNotesLayer()
 
     return note
   }
@@ -605,6 +605,9 @@ class Editor extends CanvasChild {
       }
       if (typeof this.myChildren[childId].removeFromEditor === 'function') this.myChildren[childId].removeFromEditor(this)
       this.myChildren[childId] = null
+
+      //  Reset mouse state
+      this.mouseState = this.mouseEvents.Idle;
     }
   }
 
@@ -626,28 +629,163 @@ class Editor extends CanvasChild {
       this.myChildren[opId].iterate()
     }
   }
-  
+
   /**
-   * @method refreshNotesLayer
+   * @method _cameraToWorld
+   *
+   * Get camera coordinates in worldspace
+   * 
+   * @param {<Number>}	viewX - x view coordinate
+   * @param {<Number>}	viewY - y view coordinate
+   * 
+   * @return {<Array>} the [x, y] worldspace coordinates
+   */
+  _cameraToWorld(viewX = this.viewCenter[0], viewY = this.viewCenter[1]) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const cameraX = (width/2-viewX)/scale
+    const cameraY = (height/2-viewY)/scale
+
+    return [cameraX, cameraY]
+  }
+
+  /**
+   * @method _worldToFrame
+   *
+   * Transform from worldspace to framespace, where top-left is (-1, -1) and bottom-right is (1, 1)
+   * 
+   * @param {<Number>}	worldX - x world coordinate
+   * @param {<Number>}	worldY - y world coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _worldToFrame(worldX, worldY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const [cameraX, cameraY] = this._cameraToWorld()
+
+    const frameX = (worldX-cameraX)*scale*2/width
+    const frameY = (worldY-cameraY)*scale*2/height
+
+    return [frameX, frameY]
+  }
+
+  /**
+   * @method _frameToWorld
+   *
+   * Transform from framespace, where top-left is (-1, -1) and bottom-right is (1, 1), to worldspace
+   * 
+   * @param {<Number>}	frameX - x frame coordinate
+   * @param {<Number>}	frameY - y frame coordinate
+   * 
+   * @return {<Array>} the [x, y] worldspace coordinates
+   */
+  _frameToWorld(frameX, frameY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const [cameraX, cameraY] = this._cameraToWorld()
+
+    const worldX = (frameX*width/2/scale+cameraX)
+    const worldY = (frameY*height/2/scale+cameraY)
+
+    return [worldX, worldY]
+  }
+
+  /**
+   * @method _frameToScreen
+   *
+   * Transform from framespace, where top-left is (-1, -1) and bottom-right is (1, 1), to screenspace (pixels)
+   * 
+   * @param {<Number>}	frameX - x frame coordinate
+   * @param {<Number>}	frameY - y frame coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _frameToScreen(frameX, frameY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const screenX = width*(frameX+1)/2
+    const screenY = height*(frameY+1)/2
+
+    return [screenX, screenY]
+  }
+
+  /**
+   * @method _screenToFrame
+   *
+   * Transform from screenspace (pixels) to framespace, where top-left is (-1, -1) and bottom-right is (1, 1)
+   * 
+   * @param {<Number>}	screenX - x screen coordinate
+   * @param {<Number>}	screenY - y screen coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _screenToFrame(screenX, screenY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const frameX = (screenX/width)*2-1
+    const frameY = (screenY/height)*2-1
+
+    return [frameX, frameY]
+  }
+
+  _screenToWorld(screenX, screenY) {
+    const [frameX, frameY] = this._screenToFrame(screenX, screenY)
+    return this._frameToWorld(frameX, frameY)
+  }
+
+  _worldToScreen(worldX, worldY) {
+    const [frameX, frameY] = this._worldToFrame(worldX, worldY)
+    return this._frameToScreen(frameX, frameY)
+  }
+
+  /**
+   * @method _refreshNotesLayer
    *
    * Refresh the notes layer transform to match the viewCenter/viewScale we are using for canvas rendering
    */
-  refreshNotesLayer() {
+  _refreshNotesLayer() {
     console.log('Refreshing Notes Layer')
+
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
     
-    const cameraX = this.viewCenter[0]
-    const cameraY = this.viewCenter[1]
-    console.log(`Camera: ${cameraX}, ${cameraY}`)
+    const [cameraX, cameraY] = this._cameraToWorld()
+    // console.log(`Camera: ${cameraX}, ${cameraY}`)
+
+    console.log(`Scale: ${scale}\nScreen: ${width}, ${height}\nCamera: ${cameraX}, ${cameraY}`)
     
-    const frameX = (0-cameraX)/this.viewScale
-    const frameY = (0-cameraY)/this.viewScale
+    const [frameX, frameY] = this._worldToFrame(0, 0)
     console.log(`Frame: ${frameX}, ${frameY}`)
 
-    const screenX = (frameX*2-1)/this.viewWidth
-    const screenY = (frameY*2-1)/this.viewHeight
+    const [screenX, screenY] = this._frameToScreen(frameX, frameY)
     console.log(`Screen: ${screenX}, ${screenY}`)
       
-    this.notesLayerNode.setAttribute('style', `transform: translate(${screenX}px, ${screenY}px) scale(${this.viewScale}, ${this.viewScale})`)
+    // this.notesLayerNode.setAttribute('style', `transform: translate(${screenX}px, ${screenY}px) scale(${scale}, ${scale})`)
+
+    // Pass transforms through event detail. This is kind of ugly, but it maintains the dependency injection pattern. There is probably a better way?
+    const detail = {
+      worldToFrame: this._worldToFrame.bind(this),
+      frameToWorld: this._frameToWorld.bind(this),
+      screenToFrame: this._screenToFrame.bind(this),
+      frameToScreen: this._frameToScreen.bind(this),
+      worldToScreen: this._worldToScreen.bind(this),
+      screenToWorld: this._screenToWorld.bind(this),
+      scale: this.viewScale,
+    }
+
+    this.emit('RefreshNotes', detail)
   }
 
 
@@ -683,7 +821,7 @@ class Editor extends CanvasChild {
     this.viewScalePrevious = this.viewScale
 
     // Refresh the transform properties of the notes layer
-    this.refreshNotesLayer()
+    this._refreshNotesLayer()
   }
 
   onChildOut (event) {
@@ -778,7 +916,7 @@ class Editor extends CanvasChild {
   /**
    * @method _trueClick
    *
-   * @param {<Obhect>}	event - the event object
+   * @param {<Object>}	event - the event object
    *
    * @return {Boolean}
    *
@@ -837,6 +975,11 @@ class Editor extends CanvasChild {
    * @see https://p5js.org/reference/#/p5/mouseClicked
    */
   mouseClicked (event) {
+    const [cameraX, cameraY] = this._cameraToWorld()
+    const clickFrame = this._screenToFrame(event.pageX, event.pageY)
+    const clickWorld = this._frameToWorld(clickFrame[0], clickFrame[1])
+    console.log(`Mouse clicked at…\nCamera: ${cameraX}, ${cameraY}\nScreen: ${event.pageX}, ${event.pageY}\nFrame: ${clickFrame[0]}, ${clickFrame[1]}\nWorld: ${clickWorld[0]}, ${clickWorld[1]}`)
+
     if ( this._trueClick(event) && this.mouseOver) {
 
       //  Selection
@@ -975,7 +1118,7 @@ class Editor extends CanvasChild {
             this.viewCenter[1] + event.movementY
           ]
 
-          this.refreshNotesLayer()
+          this._refreshNotesLayer()
 
           detail = {
             viewCenter: this.viewCenter
@@ -1012,6 +1155,8 @@ class Editor extends CanvasChild {
               this.setChildSelected( overOpId )
             }
           }
+          
+          this._refreshNotesLayer()
 
           detail = {
             xChange: nowCoordGlobal[0] - thenCoordGlobal[0],
@@ -1344,7 +1489,7 @@ class Editor extends CanvasChild {
     // Base64 string representation
     const b64 = btoa(enc)
     // URL to write to window
-    const url = location.protocol+'//'+location.hostname+location.pathname+'?'+b64
+    const url = location.protocol+'//'+location.host+location.pathname+'?'+b64
 
     console.log(obj)
 

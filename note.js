@@ -16,9 +16,10 @@ class Note extends EditorChild {
 	constructor(x, y, setCount = 0, setType = 0) {
 		super(x, y, setType);
 
-		// Note-specific listeners (currently there are none)
+		// Note-specific listeners
 		this.listenEvents = [
 			...this.listenEvents,
+      'RefreshNotes'
 		]
 
 		this.talkEvents = [
@@ -63,6 +64,42 @@ class Note extends EditorChild {
     super.onMove(event)
 
     
+  }
+
+  /**
+   * @method onRefreshNotes
+   *
+   * @param {<Object>}	detail - contains transforms required to correctly position/scale this element
+   *
+   */
+  onRefreshNotes(event) {
+    const detail = event.detail
+
+    const [screenX, screenY] = detail.worldToScreen(this.globalX, this.globalY)
+
+    const width = this.backgroundElement.elt.offsetWidth
+    const height = this.backgroundElement.elt.offsetHeight
+
+    this.bodyWidth = width
+    this.bodyHeight = height
+
+    console.log('Refreshing note '+this.id)
+
+    this.backgroundElement.attribute('style', `transform: translate(${screenX-width/2}px, ${screenY-height/2}px) scale(${detail.scale}, ${detail.scale})`)
+  }
+
+  /**
+   * @method removeFromEditor
+   *
+   *  Override EditorChild.removeFromEditor method.
+   *
+   * @param {<Object>}	editor
+   *
+   */
+  removeFromEditor (editor) {
+    super.removeFromEditor(editor)
+
+    this.backgroundElement.remove()
   }
 
 	/**
