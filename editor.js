@@ -12,10 +12,10 @@ class Editor extends CanvasChild {
 
   //  Store Children Numbers and Connections
   idIterator = 0;
-  myChildren = [];
-  myNumbers = [];
-  myOperators = [];
-  myWires = [];
+  myChildren = {};
+  myNumbers = {};
+  myOperators = {};
+  myWires = {};
   freeNodes = [];
   freeNodePaths = [];
   selectedNodes = [];
@@ -81,6 +81,8 @@ class Editor extends CanvasChild {
   gridSize = this.childSize*4;
   stageSize = this.gridSize*(this.scaleMax/this.scaleMin);
 
+  // Serialization
+  deserializing
 
   constructor (id) {
     super()
@@ -127,7 +129,10 @@ class Editor extends CanvasChild {
       p.mouseOver = false
     });
 
-
+    // Read URL and deserialize if a URL state object is present
+    const obj = this._readURL()
+    if (obj)
+      this._deserialize(obj)
   }
 
 
@@ -198,8 +203,7 @@ class Editor extends CanvasChild {
   }
 
   drawChildren () {
-    const eChildren = this.myChildren[Symbol.iterator]()
-    for (let child of eChildren) {
+    for (let child of Object.values(this.myChildren)) {
       if (child) child.draw()
     }
   }
@@ -407,8 +411,10 @@ class Editor extends CanvasChild {
   addNumber (type = 0, setCount = 0, coord = this._coordCanvasToGlobal()) {
     let num = this.addChild("ComplexNumber", coord, [setCount, type])
 
+    console.log('Creating number. myNumbers:', this.myNumbers)
+
     //  Start Naked Numbers in Move mode
-    if (type === 0) {
+    if (type === 0 && !this.deserializing) {
       this.overChildren = []
       this.overChildren[num.id] = num.id
     }
@@ -416,8 +422,11 @@ class Editor extends CanvasChild {
     //  Store Reference
     this.myNumbers[num.id] = num.id
 
-    return num
+    // Save state to URL
+    if (!this.deserializing && type == 0)
+      this._writeURL()
 
+    return num
   }
 
 
@@ -432,6 +441,7 @@ class Editor extends CanvasChild {
     let op = this.addChild(type, coord)
 
     //  Add Inputs and outputs
+    console.log('Creating operator. myNumbers:', this.myNumbers)
     let input1 = this.addNumber(1)
     let input2 = this.addNumber(1)
     let output = this.addNumber(2)
@@ -443,12 +453,19 @@ class Editor extends CanvasChild {
     op.iterate()
 
     //  Start Operators in Move mode
-    this.overChildren = []
-    this.overChildren[op.id] = op.id
+    if (!this.deserializing) {
+      this.overChildren = []
+      this.overChildren[op.id] = op.id
+    }
 
     //  Store References
     this.myOperators[op.id] = [input1.id, input2.id, output.id]
 
+    // Save state to URL
+    if (!this.deserializing)
+      this._writeURL()
+
+    return op
   }
 
 
@@ -467,32 +484,30 @@ class Editor extends CanvasChild {
     //  Store id for connection
     this.mousePressVars.wire = wire.id
 
+    return wire
   }
 
   /**
    * @method connectWire
    *
-   * @param {<Number>}	targetId - EditorChild.id property which is also the array key in this.myChildren
+   * @param {<Number>}	targetId - EditorChild.id property which is also the number array key in this.myChildren
+   * @param {<Number>}	wireId - EditorChild.id property which is also the wire array key in this.myChildren
    *
    */
-  connectWire (targetId = this._getChildRef(this.overInputs)) {
-    let wireId = this.mousePressVars.wire
+  connectWire (targetId = this._getChildRef(this.overInputs), wireId = this.mousePressVars.wire) {
+    //  add wire target
+    this.myChildren[wireId].setTarget(this.myChildren[targetId])
+    let originId = this.myChildren[wireId].origin.id
+    //  store wire in myWires
+    this.myWires[wireId] = [originId, targetId]
+    //  store wire references in myNumbers
+    this.myWires[wireId].forEach((id, i) => {
+      if (this.myNumbers[id] == id) this.myNumbers[id] = []
+      this.myNumbers[id].push(wireId)
+    });
 
-    if (wireId) {
-      //  add wire target
-      this.myChildren[wireId].setTarget(this.myChildren[targetId])
-      let originId = this.myChildren[wireId].origin.id
-      //  store wire in myWires
-      this.myWires[wireId] = [originId, targetId]
-      //  store wire references in myNumbers
-      this.myWires[wireId].forEach((id, i) => {
-        if (this.myNumbers[id] == id) this.myNumbers[id] = []
-        this.myNumbers[id].push(wireId)
-      });
-
-      //  delete reference to prevent wire deletion in mouseReleased
-      this.mousePressVars.wire = false
-    }
+    //  delete reference to prevent wire deletion in mouseReleased
+    this.mousePressVars.wire = false
   }
 
 
@@ -547,7 +562,7 @@ class Editor extends CanvasChild {
           this.myNumbers[numId] = numId
         }
       });
-      this.myWires.splice(childId, 1)
+      delete this.myWires[childId]
     }
 
     //  Unselect and Delete
@@ -559,7 +574,6 @@ class Editor extends CanvasChild {
       if (typeof this.myChildren[childId].removeFromEditor === 'function') this.myChildren[childId].removeFromEditor(this)
       this.myChildren[childId] = null
     }
-
   }
 
 
@@ -571,15 +585,14 @@ class Editor extends CanvasChild {
    *  Wires first.  Then operators.
    */
   operate() {
-    this.myWires.forEach((wire, wireId) => {
-      if (this.myChildren[wireId]) this.myChildren[wireId].update()
+    Object.keys(this.myWires).forEach(wireId => {
+      if (this.myChildren[wireId])
+        this.myChildren[wireId].update()
     })
 
-    this.myOperators.forEach((operator, opId) => {
-      if (this.myChildren[opId]) this.myChildren[opId].iterate()
-    })
-
-
+    for (const opId of Object.keys(this.myOperators)) {
+      this.myChildren[opId].iterate()
+    }
   }
 
 
@@ -795,6 +808,8 @@ class Editor extends CanvasChild {
             path: reversalPath
           }
           this.emit('Reverse', detail)
+
+          this._writeURL()
         }
       }
 
@@ -1056,6 +1071,9 @@ class Editor extends CanvasChild {
       this.connectWire()
     }
 
+    if (['Move', 'Pan', 'Scale', 'Scrub', 'Connecting'].includes(this.mouseState))
+      this._writeURL()
+
     //  Remove any dangling wires
     if ( this.mousePressVars.wire !== false ) {
       this.removeChild( this.mousePressVars.wire )
@@ -1148,8 +1166,151 @@ class Editor extends CanvasChild {
 
       return id
     }
-
   }
 
+  /**
+   * @method _serialize
+   *
+   *  Get an object containing the serialized state of every object in the scene.
+   *
+   * @return {<Object>} the full state of the editor represented as an object.
+   */
+  _serialize() {
+    console.log('My Children', this.myChildren)
+    // We only want to serialize naked numbers, since inputs and outputs are serialized within operators
+    const nakedNumbers = Object.keys(this.myNumbers).filter(v => {
+      const n = this.myChildren[v]
+      return n.type == n.NAKED
+    })
 
+    const numbers = nakedNumbers.map(v => this.myChildren[v].serialize())
+    
+    const operators = Object.keys(this.myOperators).map(v => this.myChildren[v].serialize())
+
+    const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
+
+    console.log('Operators:', this.myOperators)
+    console.log('Numbers:', this.myNumbers)
+    console.log('Wires:', this.myWires)
+
+    return {
+      scale: this.viewScale,
+      center: this.viewCenter,
+      numbers,
+      operators,
+      wires,
+    }
+  }
+
+  /**
+   * @method _deserialize
+   *
+   *  @param {Object} the serialized object to restore editor state from.
+   */
+  _deserialize(obj) {
+    this.deserializing = true
+
+    this.viewScale = obj.scale
+    this.viewCenter[0] = obj.center[0]
+    this.viewCenter[1] = obj.center[1]
+
+    const numberMap = {}
+    const reversedNumbers = []
+
+    obj.numbers.forEach(v => {
+      console.log(`Spawning number of value ${v.real}:`, v)
+      const number = this.addNumber()
+      
+      number.deserialize(v)
+      
+      numberMap[v.id] = number.id
+      
+      if (v.reversed)
+        reversedNumbers.push(number)
+    })
+
+    obj.operators.forEach(v => {
+      console.log(`Spawning operator of type ${v.type}:`, v)
+      const operator = this.addOperator(v.type)
+      
+      operator.deserialize(v)
+      
+      numberMap[v.input1.id] = operator.myInput1.id
+      numberMap[v.input2.id] = operator.myInput2.id
+      numberMap[v.output.id] = operator.myOutput.id
+
+      if (v.input1.reversed)
+        reversedNumbers.push(operator.myInput1)
+      if (v.input2.reversed)
+        reversedNumbers.push(operator.myInput2)
+      if (v.output.reversed)
+        reversedNumbers.push(operator.myOutput)
+    })
+
+    obj.wires.forEach(v => {
+      console.log(`Spawning wire between ${v.origin}–${v.target}:`, v)
+      const originNumber = this.myChildren[numberMap[v.origin]]
+      const targetNumber = this.myChildren[numberMap[v.target]]
+      const wire = this.addWire(originNumber.id)
+      this.connectWire(targetNumber.id, wire.id)
+      
+      wire.deserialize(v)
+    })
+
+    // For any numbers that were reversed, swap their origin and target. This must happen after wire connections are made.
+    for (const number of reversedNumbers) {
+      const origin = number.origin
+      const target = number.target
+      
+  		number.origin = target
+	  	number.target = origin
+    }
+
+    this.deserializing = false
+  }
+
+  /**
+   * @method _writeURL
+   *
+   *  Write the serialized state of the editor to the URL
+   */
+  _writeURL() {
+    // Serialized object
+    const obj = this._serialize()
+    // Raw string representation
+    const str = JSON.stringify(obj)
+    // Encoded string representation
+    const enc = encodeURIComponent(str)
+    // Base64 string representation
+    const b64 = btoa(enc)
+    // URL to write to window
+    const url = location.protocol+'//'+location.hostname+location.pathname+'?'+b64
+
+    console.log(obj)
+
+    history.pushState(obj, 'Circuits', url)
+  }
+
+  /**
+   * @method _readURL
+   *
+   *  Fetch the editor state stored in the URL, if any exists.
+   * 
+   * @return {<Object>} the state of the editor to restore from.
+   */
+  _readURL() {
+    const query = location.search
+
+    if (!query)
+      return null
+    
+    const b64 = query.slice(1)
+    const enc = atob(b64)
+    const str = decodeURIComponent(enc)
+    const obj = JSON.parse(str)
+
+    console.log(str)
+
+    return obj
+  }
 };
