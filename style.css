@@ -7,8 +7,15 @@ body,
   width: 100%;
 }
 
+textarea::-webkit-resizer {
+  border-width: 16px;
+  border-style: solid;
+  border-color: transparent orangered orangered transparent;
+}
+
 #notes-layer {
   pointer-events: none;
+  user-select: none;
   
   position: absolute;
   
@@ -18,19 +25,67 @@ body,
   bottom: 0;  
 }
 
-.note-background {
+#notes-layer > .note {
   background: #F8F8F8;
   color: #222;
   
   position: absolute;
 }
 
-.note-paragraph {
-  
+#notes-layer > .note[hover] {
+  background: #888;
 }
 
-.note-delete-button {
-  
+#notes-layer > .note.selected {
+  background: #EEF;
+}
+
+.note {
+  padding: 128px;
+  font-size: 128px;
+}
+
+.note h1 {
+  font-size: 256px;
+}
+
+.note h2 {
+  font-size: 192px;
+}
+
+.note h3 {
+  font-size: 144px;
+}
+
+.note p {
+  font-size: 128px;
+}
+
+.note-content {
+  display: block;
+  width: max-content;
+}
+
+.note-content > *:first-child {
+  margin-top: 0;
+}
+
+.note-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.note.editing .note-content {
+  display: none;
+}
+
+.note-editor {
+  display: none;
+  pointer-events: all;
+  font-size: 64px;
+}
+
+.note.editing .note-editor {
+  display: block;
 }
 
 .hidden {

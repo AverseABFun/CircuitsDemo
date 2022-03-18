@@ -16,7 +16,7 @@ class Editor extends CanvasChild {
   myNumbers = {};
   myOperators = {};
   myWires = {};
-  myNotes = {};
+  myNotes = [];
   freeNodes = [];
   freeNodePaths = [];
   selectedNodes = [];
@@ -24,6 +24,7 @@ class Editor extends CanvasChild {
   overChildren = [];
   overInputs = [];
   overOutputs = [];
+  editingNote = null;
 
   //  View bounds and scale
   viewWidth = document.documentElement.clientWidth;
@@ -372,6 +373,20 @@ class Editor extends CanvasChild {
 
 
   /**
+   * @method _endNoteEdit
+   *
+   *  Close out the note we are editing
+   */
+  _endNoteEdit () {
+    if (this.editingNote == null)
+      return
+    
+    this.myChildren[this.editingNote].endEdit()
+    this.editingNote = null
+  }
+
+
+  /**
    * @method addChild
    *
    * @param {<String>}	type - should name a class that extends EditorChild class
@@ -415,8 +430,6 @@ class Editor extends CanvasChild {
   addNumber (type = 0, setCount = 0, coord = this._coordCanvasToGlobal()) {
     let num = this.addChild("ComplexNumber", coord, [setCount, type])
 
-    console.log('Creating number. myNumbers:', this.myNumbers)
-
     //  Start Naked Numbers in Move mode
     if (type === 0 && !this.deserializing) {
       this.overChildren = []
@@ -445,7 +458,6 @@ class Editor extends CanvasChild {
     let op = this.addChild(type, coord)
 
     //  Add Inputs and outputs
-    console.log('Creating operator. myNumbers:', this.myNumbers)
     let input1 = this.addNumber(1)
     let input2 = this.addNumber(1)
     let output = this.addNumber(2)
@@ -480,10 +492,20 @@ class Editor extends CanvasChild {
    *
    */
   addNote (type = 'Note', coord = this._coordCanvasToGlobal() ) {
-    let note = this.addChild(type, coord)
+    const self = this    
+    const transforms = {
+      get scale() {return self.viewScale},
+      worldToFrame: this._worldToFrame.bind(this),
+      frameToWorld: this._frameToWorld.bind(this),
+      screenToFrame: this._screenToFrame.bind(this),
+      frameToScreen: this._frameToScreen.bind(this),
+      worldToScreen: this._worldToScreen.bind(this),
+      screenToWorld: this._screenToWorld.bind(this),
+    }
 
-    //  Add Inputs and outputs
-    console.log('Creating operator. myNumbers:', this.myNumbers)
+    let note = this.addChild(type, coord, [transforms])
+
+    this.myNotes.push(note.id)
 
     //  Start Operators in Move mode
     if (!this.deserializing) {
@@ -595,6 +617,11 @@ class Editor extends CanvasChild {
         }
       });
       delete this.myWires[childId]
+    }
+
+    //   Notes
+    if (childId in this.myNotes) {
+      this.myNotes.splice(this.myNotes.indexOf(childId), 1)
     }
 
     //  Unselect and Delete
@@ -755,37 +782,7 @@ class Editor extends CanvasChild {
    * Refresh the notes layer transform to match the viewCenter/viewScale we are using for canvas rendering
    */
   _refreshNotesLayer() {
-    console.log('Refreshing Notes Layer')
-
-    const scale = this.viewScale
-    const width = this.viewWidth
-    const height = this.viewHeight
-    
-    const [cameraX, cameraY] = this._cameraToWorld()
-    // console.log(`Camera: ${cameraX}, ${cameraY}`)
-
-    console.log(`Scale: ${scale}\nScreen: ${width}, ${height}\nCamera: ${cameraX}, ${cameraY}`)
-    
-    const [frameX, frameY] = this._worldToFrame(0, 0)
-    console.log(`Frame: ${frameX}, ${frameY}`)
-
-    const [screenX, screenY] = this._frameToScreen(frameX, frameY)
-    console.log(`Screen: ${screenX}, ${screenY}`)
-      
-    // this.notesLayerNode.setAttribute('style', `transform: translate(${screenX}px, ${screenY}px) scale(${scale}, ${scale})`)
-
-    // Pass transforms through event detail. This is kind of ugly, but it maintains the dependency injection pattern. There is probably a better way?
-    const detail = {
-      worldToFrame: this._worldToFrame.bind(this),
-      frameToWorld: this._frameToWorld.bind(this),
-      screenToFrame: this._screenToFrame.bind(this),
-      frameToScreen: this._frameToScreen.bind(this),
-      worldToScreen: this._worldToScreen.bind(this),
-      screenToWorld: this._screenToWorld.bind(this),
-      scale: this.viewScale,
-    }
-
-    this.emit('RefreshNotes', detail)
+    this.emit('RefreshNotes')
   }
 
 
@@ -911,8 +908,6 @@ class Editor extends CanvasChild {
     this.emit('WireUpdate', event.detail)
   }
 
-
-
   /**
    * @method _trueClick
    *
@@ -936,12 +931,20 @@ class Editor extends CanvasChild {
   /**
    * @method doubleClicked
    *
-   *  We can double click on bound nodes (outputs) to ask for control.
+   *  We can double click on bound nodes (outputs) to ask for control, or on notes to edit them
    *
    * @see https://p5js.org/reference/#/p5/doubleClicked
    */
   doubleClicked (event) {
     if ( this._trueClick(event) ) {
+
+      // Initiate Edit
+      const noteId = this.mousePressVars.over.children.find(v => this.myNotes.includes(v))
+      if (noteId != undefined) {
+        const note = this.myChildren[noteId]
+        this.editingNote = noteId
+        note.beginEdit()
+      }
 
       //  Initiate Reversal
       if ( this.mousePressVars.over.outputs.length > 0 ) {
@@ -975,11 +978,6 @@ class Editor extends CanvasChild {
    * @see https://p5js.org/reference/#/p5/mouseClicked
    */
   mouseClicked (event) {
-    const [cameraX, cameraY] = this._cameraToWorld()
-    const clickFrame = this._screenToFrame(event.pageX, event.pageY)
-    const clickWorld = this._frameToWorld(clickFrame[0], clickFrame[1])
-    console.log(`Mouse clicked at…\nCamera: ${cameraX}, ${cameraY}\nScreen: ${event.pageX}, ${event.pageY}\nFrame: ${clickFrame[0]}, ${clickFrame[1]}\nWorld: ${clickWorld[0]}, ${clickWorld[1]}`)
-
     if ( this._trueClick(event) && this.mouseOver) {
 
       //  Selection
@@ -1255,6 +1253,9 @@ class Editor extends CanvasChild {
     this.mousePressVars.over.inputs = this.overInputs.slice()
     this.mousePressVars.over.outputs = this.overOutputs.slice()
 
+    // If we are editing a note and click anywhere other than that note, stop editing.
+    if (this.editingNote != null && !this.mousePressVars.over.children.includes(this.editingNote))
+      this._endNoteEdit()
   }
 
   /**
@@ -1330,6 +1331,14 @@ class Editor extends CanvasChild {
    */
   keyReleased (event) {
     let keynum = event.keyCode
+
+    // Ignore key events if we are editing a note (unless the key is 'Escape', in which case we end the edit)
+    if (this.editingNote != null) {
+      if (keynum == 27)
+        this._endNoteEdit()
+
+      return
+    }
 
     //  These actions will only apply when mouse is Idle
     if (

@@ -303,9 +303,11 @@ class EditorChild extends CanvasChild {
 					overOutput: this.overOutput
 				}
 				this.emit('ChildOver', detail)
+        this.onOver(detail)
 			} else {
 				detail = { id: this.id }
 				this.emit('ChildOut', detail)
+        this.onOut(detail)
 				// reset on out
 				this.connecting = false
 			}
@@ -375,6 +377,27 @@ class EditorChild extends CanvasChild {
    */
   onScale (event) {
     this.viewCenter = event.detail.viewCenter
+	}
+
+
+  /**
+   * @method onOver
+   *
+   * @param {<Object>}	event
+   *
+   */
+   onOver (event) {
+    
+	}
+
+  /**
+   * @method onOut
+   *
+   * @param {<Object>}	event
+   *
+   */
+  onOut (event) {
+    
 	}
 
 
