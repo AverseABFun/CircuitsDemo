@@ -86,8 +86,6 @@ class Note extends EditorChild {
     const offsetX = lerp(0, z, frameX/aspect)
     const offsetY = lerp(0, z, frameY)
 
-    console.log(`Refreshing transform of ${this.id}:\nFrame: ${frameX}, ${frameY}\nOffset: ${offsetX}, ${offsetY}`)
-
     const translateX = screenX-width/2+offsetX
     const translateY = screenY-height/2+offsetY
 
