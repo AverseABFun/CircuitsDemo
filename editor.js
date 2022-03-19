@@ -622,7 +622,7 @@ class Editor extends CanvasChild {
     }
 
     //   Notes
-    if (childId in this.myNotes) {
+    if (this.myNotes.includes(childId)) {
       this.myNotes.splice(this.myNotes.indexOf(childId), 1)
     }
 
@@ -1405,6 +1405,7 @@ class Editor extends CanvasChild {
 
     const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
 
+    console.log(`Serializing notes:`, this.myNotes)
     const notes = this.myNotes.map(v => this.myChildren[v].serialize())
 
     return {

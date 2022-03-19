@@ -29,7 +29,7 @@ class Note extends EditorChild {
 		this.talkEvents = [
 			...this.talkEvents,
 		]
-    
+
     this.transforms = transforms
 
     this.backgroundNode = createDiv('')
@@ -71,13 +71,34 @@ class Note extends EditorChild {
   refreshTransform() {
     this.refreshBodySize()
 
-    const [screenX, screenY] = this.transforms.worldToScreen(this.globalX, this.globalY)
-
     const width = this.bodyWidth
     const height = this.bodyHeight
     const scale = this.transforms.scale
+    const aspect = innerWidth/innerHeight
 
-    this.backgroundNode.attribute('style', `transform: translate(${screenX-width/2}px, ${screenY-height/2}px) scale(${scale}, ${scale})`)
+    const [screenX, screenY] = this.transforms.worldToScreen(this.globalX, this.globalY)
+    const [frameX, frameY] = this.transforms.worldToFrame(this.globalX, this.globalY)
+
+    const [frameLeft, frameTop] = this.transforms.screenToFrame(screenX-0*width/2, screenY-0*height/2)
+    const [frameRight, frameBottom] = this.transforms.screenToFrame(screenX+width/1, screenY+height/1)
+
+    const z = 20*scale
+    const offsetX = lerp(0, z, frameX/aspect)
+    const offsetY = lerp(0, z, frameY)
+
+    console.log(`Refreshing transform of ${this.id}:\nFrame: ${frameX}, ${frameY}\nOffset: ${offsetX}, ${offsetY}`)
+
+    const translateX = screenX-width/2+offsetX
+    const translateY = screenY-height/2+offsetY
+
+    const shadowX = -offsetX/scale
+    const shadowY = -offsetY/scale
+    const shadowBlur = 15
+    const shadowColor = 'rgba(32, 32, 32, 0.3)'
+    const shadowSpread = 0
+
+    this.backgroundNode.style('transform', `translate(${translateX}px, ${translateY}px) scale(${scale}, ${scale})`)
+    this.backgroundNode.style('box-shadow', `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowSpread}px ${shadowColor}`)
   }
 
   /**
