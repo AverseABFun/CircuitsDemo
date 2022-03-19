@@ -6,16 +6,16 @@ class Note extends EditorChild {
 	//  STATE
   editing = false
   text = "Double-click me to edit!"
-  assignedWidth
+  editorWidth = 600
+  editorHeight = 400
 
   //  DOM
   backgroundNode
   contentNode
   editorNode
 
-  // Transforms assigned by editor through constructor. This feels like a janky way to inject these dependencies, I do not like it, but it works.
+  // Transforms assigned by editor through constructor
   transforms
-  scaleFactor = 4
   
 	constructor(x, y, transforms) {
 		super(x, y, 0);
@@ -44,13 +44,14 @@ class Note extends EditorChild {
     this.editorNode = createElement('textarea')
     this.editorNode.parent(this.backgroundNode)
     this.editorNode.class('note-editor')
+    this.editorNode.style('width', this.editorWidth+'px')
+    this.editorNode.style('height', this.editorHeight+'px')
     this.editorNode.elt.value = this.text
 
     new ResizeObserver(this.onResizeEditor.bind(this)).observe(this.editorNode.elt)
     
-    this.editorNode.elt.addEventListener('mousedown', event => {
-      event.stopPropagation()
-    })
+    // Ensure that mousedown events within the editor do not propagate and thus close out the editing session
+    this.editorNode.elt.addEventListener('mousedown', e => e.stopPropagation())
 	}
 
   /**
@@ -140,15 +141,6 @@ class Note extends EditorChild {
    onResizeEditor(event) {
     console.log(`Resizing note ${this.id}`)
 
-    // const x = this.backgroundNode.elt.offsetLeft
-    // const y = this.backgroundNode.elt.offsetTop
-
-    // const width = this.backgroundNode.elt.offsetWidth
-    // const height = this.backgroundNode.elt.offsetHeight
-
-    // this.globalX = x+width/2
-    // this.globalY = y+height/2
-
     this.refreshTransform()
   }
 
@@ -174,10 +166,9 @@ class Note extends EditorChild {
   endEdit() {
     this.editing = false
 
-    this.assignedWidth = this.editorNode.elt.offsetWidth
     this.text = this.editorNode.elt.value
-
-    console.log(`Finishing edit of note ${this.id}:`, this.text)
+    this.editorWidth = this.editorNode.elt.offsetWidth
+    this.editorHeight = this.editorNode.elt.offsetHeight
 
     const converter = new showdown.Converter()
     converter.setOption('tables', true)
@@ -186,8 +177,6 @@ class Note extends EditorChild {
 
     this.contentNode.html(html)
     this.backgroundNode.removeClass('editing')
-
-    // this.contentNode.attribute('style', `width: ${this.assignedWidth}px`)
 
     this.refreshTransform()
   }
@@ -218,58 +207,6 @@ class Note extends EditorChild {
     console.log('Out of note '+this.id)
   }
 
-  /**
-	 * @method isOverBody
-   * 
-   * Overrides the standard method to include our scale factor
-	 *
-	 * @param {<Number>}	x
-	 * @param {<Number>}	y
-	 *
-	 */
-	// isOverBody (x, y) {
-	// 	let body = this._getBody()
-	// 	this.overBody = this._coordInRect(x, y, body)
-	// }
-
-  /**
-   * @method _getSquare
-   * 
-   * Overrides the standard method to include our scale factor
-   *
-   * @return {<Object>}	square - an object with outer bounds of a square
-   *
-   */
-  // _getSquare ( r, b, l = this.globalX - this.bodyWidth/2, t = this.globalY - this.bodyHeight/2 ) {
-  //   if ( typeof(b) == 'undefined' ) {
-  //     b = t + this.bodyHeight
-  //   }
-  //   if ( typeof(r) == 'undefined' ) {
-  //     r = l + this.bodyWidth
-  //   }
-  //   let square = {
-  //     left: l,
-  //     right: r,
-  //     top: t,
-  //     bottom: b
-  //   }
-
-  //   return square
-  // }
-
-  /**
-	 * @method isOverBody
-	 *
-	 * @param {<Number>}	x
-	 * @param {<Number>}	y
-	 *
-	 */
-	// isOverBody (x, y) {
-	// 	let body = this._getBody()
-  //   const el = document.elementFromPoint(x, y)
-	// 	this.overBody = this.backgroundNode.elt.contains(el)
-	// }
-
 	/**
 	 * @method serialize
 	 * Get a static object representation of this note
@@ -282,6 +219,8 @@ class Note extends EditorChild {
       x: this.globalX,
       y: this.globalY,
       text: this.text,
+      editorWidth: this.editorWidth,
+      editorHeight: this.editorHeight,
     }
   }
 
@@ -293,8 +232,9 @@ class Note extends EditorChild {
 	 */
   deserialize(state) {
     this.setPosition(state.x, state.y)
-    this.real = state.real
-    this.imaginary = state.imaginary
-    this.reversed = state.reversed
+    this.text = state.text
+    this.editorNode.style('width', state.editorWidth+'px')
+    this.editorNode.style('height', state.editorHeight+'px')
+    this.refreshTransform()
   }
 }

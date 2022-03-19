@@ -43,6 +43,7 @@ textarea::-webkit-resizer {
 .note {
   padding: 128px;
   font-size: 128px;
+  transform-origin: center;
 }
 
 .note h1 {
@@ -59,6 +60,10 @@ textarea::-webkit-resizer {
 
 .note p {
   font-size: 128px;
+}
+
+.note a {
+  pointer-events: all;
 }
 
 .note-content {

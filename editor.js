@@ -383,6 +383,8 @@ class Editor extends CanvasChild {
     
     this.myChildren[this.editingNote].endEdit()
     this.editingNote = null
+
+    this._writeURL()
   }
 
 
@@ -1403,6 +1405,8 @@ class Editor extends CanvasChild {
 
     const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
 
+    const notes = this.myNotes.map(v => this.myChildren[v].serialize())
+
     console.log('Operators:', this.myOperators)
     console.log('Numbers:', this.myNumbers)
     console.log('Wires:', this.myWires)
@@ -1413,6 +1417,7 @@ class Editor extends CanvasChild {
       numbers,
       operators,
       wires,
+      notes,
     }
   }
 
@@ -1469,6 +1474,13 @@ class Editor extends CanvasChild {
       this.connectWire(targetNumber.id, wire.id)
       
       wire.deserialize(v)
+    })
+
+    obj.notes.forEach(v => {
+      console.log(`Spawning note with text:`, v.text)
+
+      const note = this.addNote()
+      note.deserialize(v)
     })
 
     // For any numbers that were reversed, swap their origin and target. This must happen after wire connections are made.
