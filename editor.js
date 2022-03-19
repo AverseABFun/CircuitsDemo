@@ -887,15 +887,13 @@ class Editor extends CanvasChild {
     let id = event.detail.id
     let shift = event.detail.shift
 
-    //  Select
-    this.setChildSelected(id, true, false)
-
+    this.setChildSelected(id, true, true)
   }
 
   onChildDeselect (event) {
     let id = event.detail.id
 
-    this.setChildSelected(id, false, false)
+    this.setChildSelected(id, false, true)
   }
 
   onComplexNumberUpdate (event) {
@@ -1395,7 +1393,6 @@ class Editor extends CanvasChild {
    * @return {<Object>} the full state of the editor represented as an object.
    */
   _serialize() {
-    console.log('My Children', this.myChildren)
     // We only want to serialize naked numbers, since inputs and outputs are serialized within operators
     const nakedNumbers = Object.keys(this.myNumbers).filter(v => {
       const n = this.myChildren[v]
@@ -1409,11 +1406,6 @@ class Editor extends CanvasChild {
     const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
 
     const notes = this.myNotes.map(v => this.myChildren[v].serialize())
-
-    console.log('Operators:', this.myOperators)
-    console.log('Numbers:', this.myNumbers)
-    console.log('Wires:', this.myWires)
-    console.log('Notes:', this.myNotes)
 
     return {
       scale: this.viewScale,
@@ -1444,7 +1436,6 @@ class Editor extends CanvasChild {
     const reversedNumbers = []
 
     obj.numbers.forEach(v => {
-      console.log(`Spawning number of value ${v.real}:`, v)
       const number = this.addNumber()
       
       number.deserialize(v)
@@ -1456,7 +1447,6 @@ class Editor extends CanvasChild {
     })
 
     obj.operators.forEach(v => {
-      console.log(`Spawning operator of type ${v.type}:`, v)
       const operator = this.addOperator(v.type)
       
       operator.deserialize(v)
@@ -1474,7 +1464,6 @@ class Editor extends CanvasChild {
     })
 
     obj.wires.forEach(v => {
-      console.log(`Spawning wire between ${v.origin}–${v.target}:`, v)
       const originNumber = this.myChildren[numberMap[v.origin]]
       const targetNumber = this.myChildren[numberMap[v.target]]
       const wire = this.addWire(originNumber.id)
@@ -1484,8 +1473,6 @@ class Editor extends CanvasChild {
     })
 
     obj.notes.forEach(v => {
-      console.log(`Spawning note with text:`, v.text)
-
       const note = this.addNote()
       note.deserialize(v)
     })
@@ -1519,7 +1506,7 @@ class Editor extends CanvasChild {
     // URL to write to window
     const url = location.protocol+'//'+location.host+location.pathname+'?'+b64
 
-    console.log(obj)
+    // console.log(`Writing serialized state to URL:`, obj)
 
     history.pushState(obj, 'Circuits', url)
   }
@@ -1541,8 +1528,6 @@ class Editor extends CanvasChild {
     const enc = atob(b64)
     const str = decodeURIComponent(enc)
     const obj = JSON.parse(str)
-
-    console.log(str)
 
     return obj
   }

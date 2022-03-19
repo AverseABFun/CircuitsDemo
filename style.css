@@ -25,25 +25,34 @@ textarea::-webkit-resizer {
   bottom: 0;  
 }
 
-#notes-layer > .note {
-  background: #F8F8F8;
+.note {
   color: #222;
+  background: #F8F8F8;
+  box-shadow: 0px 8px 20px rgba(32, 32, 32, 0.2);
   
   position: absolute;
 }
 
-#notes-layer > .note[hover] {
-  background: #888;
-}
-
-#notes-layer > .note.selected {
+.note.selected {
   background: #EEF;
 }
 
 .note {
-  padding: 64px;
+  padding: 96px;
   font-size: 128px;
-  transform-origin: center;
+
+  transform-origin: top-left;
+
+  transition-property: background;
+  transition-duration: 0.2s;
+}
+
+.note.editing {
+  padding: 64px;
+}
+
+.note.over {
+  background: #DDF;
 }
 
 .note h1 {
@@ -69,7 +78,6 @@ textarea::-webkit-resizer {
 .note-content {
   display: block;
   width: max-content;
-  margin: 32px;
 }
 
 .note-content > *:first-child {

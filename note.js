@@ -29,8 +29,7 @@ class Note extends EditorChild {
 		this.talkEvents = [
 			...this.talkEvents,
 		]
-
-    console.log('Creating note:', arguments)
+    
     this.transforms = transforms
 
     this.backgroundNode = createDiv('')
@@ -78,8 +77,6 @@ class Note extends EditorChild {
     const height = this.bodyHeight
     const scale = this.transforms.scale
 
-    console.log('Refreshing transform of note '+this.id)
-
     this.backgroundNode.attribute('style', `transform: translate(${screenX-width/2}px, ${screenY-height/2}px) scale(${scale}, ${scale})`)
   }
 
@@ -101,7 +98,6 @@ class Note extends EditorChild {
    *
    */
   onSelect(event) {
-    console.log(`Selecting note ${this.id}`)
     super.onSelect(event)
 
     if (event.detail.id == this.id) {
@@ -114,8 +110,7 @@ class Note extends EditorChild {
    *
    */
   onDeselect(event) {
-    console.log(`Deselecting note ${this.id}`)
-    super.onSelect(event)
+    super.onDeselect(event)
 
     if (event.detail.id == this.id) {
       this.backgroundNode.removeClass('selected')
@@ -127,8 +122,6 @@ class Note extends EditorChild {
    *
    */
    onResizeEditor(event) {
-    console.log(`Resizing note ${this.id}`)
-
     this.refreshTransform()
   }
 
@@ -138,7 +131,6 @@ class Note extends EditorChild {
    * Begin editing this note
    */
   beginEdit() {
-    console.log('Editing note '+this.id)
     this.editing = true
     this.backgroundNode.addClass('editing')
     this.editorNode.elt.value = this.text
@@ -186,13 +178,13 @@ class Note extends EditorChild {
   onOver(detail) {
     super.onOver(detail)
 
-    console.log('Over note '+this.id)
+    this.backgroundNode.addClass('over')
   }
 
   onOut(detail) {
     super.onOut(detail)
 
-    console.log('Out of note '+this.id)
+    this.backgroundNode.removeClass('over')
   }
 
 	/**
@@ -232,7 +224,7 @@ class Note extends EditorChild {
 
     this.editorNode.style('width', state.editorWidth+'px')
     this.editorNode.style('height', state.editorHeight+'px')
-    
+
     this.refreshTransform()
   }
 }
