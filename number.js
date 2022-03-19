@@ -21,10 +21,10 @@ class ComplexNumber extends EditorChild {
 	travelRate = 35
 
 	// Drawing
-  stemHeight = 200
-  stemWidth = 18
+	stemHeight = 200
+	stemWidth = 18
 	ioRadius = 45
-  overInputColor = 255
+	overInputColor = 255
 
 	//measure of bezier curve aggressiveness
 	mouseToTipDistance
@@ -137,7 +137,7 @@ class ComplexNumber extends EditorChild {
 	 *
 	 *
 	 */
-  drawInput () {
+drawInput () {
 		const inputDirection = this.reversed ? 1 : -1
 
     // Stem

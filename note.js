@@ -55,18 +55,6 @@ class Note extends EditorChild {
 	}
 
   /**
-   * @method onMove
-   *
-   * @param {<Object>}	event
-   *
-   */
-  onMove (event) {
-    super.onMove(event)
-
-    
-  }
-
-  /**
    * @method onRefreshNotes
    *
    * @param {<Object>}	detail - contains transforms required to correctly position/scale this element
@@ -232,9 +220,19 @@ class Note extends EditorChild {
 	 */
   deserialize(state) {
     this.setPosition(state.x, state.y)
+
     this.text = state.text
+
+    const converter = new showdown.Converter()
+    converter.setOption('tables', true)
+    converter.setOption('strikethrough', true)
+    const html = converter.makeHtml(this.text)
+
+    this.contentNode.html(html)
+
     this.editorNode.style('width', state.editorWidth+'px')
     this.editorNode.style('height', state.editorHeight+'px')
+    
     this.refreshTransform()
   }
 }

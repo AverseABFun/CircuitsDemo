@@ -586,7 +586,6 @@ class Editor extends CanvasChild {
         this.removeChild(id)
       });
       delete this.myOperators[childId]
-      delete this.myChildren[childId]
     }
 
     //   Numbers
@@ -598,7 +597,6 @@ class Editor extends CanvasChild {
         });
       }
       delete this.myNumbers[childId]
-      delete this.myChildren[childId]
     }
 
     //   Wires
@@ -621,27 +619,26 @@ class Editor extends CanvasChild {
         }
       });
       delete this.myWires[childId]
-      delete this.myChildren[childId]
     }
 
     //   Notes
     if (childId in this.myNotes) {
       this.myNotes.splice(this.myNotes.indexOf(childId), 1)
-      delete this.myChildren[childId]
     }
 
     //  Unselect and Delete
-    if (this.myChildren[childId]) {
-      if (this.selectedNodes.includes(childId)) {
-        let indexOf = this.selectedNodes.indexOf(childId)
-        this.selectedNodes.splice(indexOf, 1)
-      }
-      if (typeof this.myChildren[childId].removeFromEditor === 'function') this.myChildren[childId].removeFromEditor(this)
-      this.myChildren[childId] = null
-
-      //  Reset mouse state
-      this.mouseState = this.mouseEvents.Idle;
+    if (this.selectedNodes.includes(childId)) {
+      let indexOf = this.selectedNodes.indexOf(childId)
+      this.selectedNodes.splice(indexOf, 1)
     }
+    
+    if (this.myChildren[childId]) {
+      this.myChildren[childId].removeFromEditor(this)
+      delete this.myChildren[childId]
+    }
+
+    //  Reset mouse state
+    this.mouseState = this.mouseEvents.Idle
   }
 
 
@@ -825,6 +822,8 @@ class Editor extends CanvasChild {
 
     // Refresh the transform properties of the notes layer
     this._refreshNotesLayer()
+
+    this._writeURL()
   }
 
   onChildOut (event) {
@@ -1435,6 +1434,9 @@ class Editor extends CanvasChild {
     this.deserializing = true
 
     this.viewScale = obj.scale
+    this.viewScaleStart = obj.scale
+    this.viewScalePrevious = obj.scale
+    this.viewScaleTarget = obj.scale
     this.viewCenter[0] = obj.center[0]
     this.viewCenter[1] = obj.center[1]
 

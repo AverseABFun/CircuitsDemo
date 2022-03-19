@@ -41,7 +41,7 @@ textarea::-webkit-resizer {
 }
 
 .note {
-  padding: 128px;
+  padding: 64px;
   font-size: 128px;
   transform-origin: center;
 }
@@ -69,6 +69,7 @@ textarea::-webkit-resizer {
 .note-content {
   display: block;
   width: max-content;
+  margin: 32px;
 }
 
 .note-content > *:first-child {
