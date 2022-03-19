@@ -585,7 +585,8 @@ class Editor extends CanvasChild {
       this.myOperators[childId].forEach((id, i) => {
         this.removeChild(id)
       });
-      this.myOperators[childId] = null
+      delete this.myOperators[childId]
+      delete this.myChildren[childId]
     }
 
     //   Numbers
@@ -596,7 +597,8 @@ class Editor extends CanvasChild {
           if (childId !== wireId) this.removeChild(wireId)
         });
       }
-      this.myNumbers[childId] = null
+      delete this.myNumbers[childId]
+      delete this.myChildren[childId]
     }
 
     //   Wires
@@ -619,11 +621,13 @@ class Editor extends CanvasChild {
         }
       });
       delete this.myWires[childId]
+      delete this.myChildren[childId]
     }
 
     //   Notes
     if (childId in this.myNotes) {
       this.myNotes.splice(this.myNotes.indexOf(childId), 1)
+      delete this.myChildren[childId]
     }
 
     //  Unselect and Delete
@@ -1410,6 +1414,7 @@ class Editor extends CanvasChild {
     console.log('Operators:', this.myOperators)
     console.log('Numbers:', this.myNumbers)
     console.log('Wires:', this.myWires)
+    console.log('Notes:', this.myNotes)
 
     return {
       scale: this.viewScale,
