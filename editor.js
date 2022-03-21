@@ -16,6 +16,7 @@ class Editor extends CanvasChild {
   myNumbers = {};
   myOperators = {};
   myWires = {};
+  myNotes = [];
   freeNodes = [];
   freeNodePaths = [];
   selectedNodes = [];
@@ -23,6 +24,7 @@ class Editor extends CanvasChild {
   overChildren = [];
   overInputs = [];
   overOutputs = [];
+  editingNote = null;
 
   //  View bounds and scale
   viewWidth = document.documentElement.clientWidth;
@@ -83,6 +85,9 @@ class Editor extends CanvasChild {
 
   // Serialization
   deserializing
+
+  // DOM
+  notesLayerNode = document.querySelector('#notes-layer')
 
   constructor (id) {
     super()
@@ -368,6 +373,22 @@ class Editor extends CanvasChild {
 
 
   /**
+   * @method _endNoteEdit
+   *
+   *  Close out the note we are editing
+   */
+  _endNoteEdit () {
+    if (this.editingNote == null)
+      return
+    
+    this.myChildren[this.editingNote].endEdit()
+    this.editingNote = null
+
+    this._writeURL()
+  }
+
+
+  /**
    * @method addChild
    *
    * @param {<String>}	type - should name a class that extends EditorChild class
@@ -411,8 +432,6 @@ class Editor extends CanvasChild {
   addNumber (type = 0, setCount = 0, coord = this._coordCanvasToGlobal()) {
     let num = this.addChild("ComplexNumber", coord, [setCount, type])
 
-    console.log('Creating number. myNumbers:', this.myNumbers)
-
     //  Start Naked Numbers in Move mode
     if (type === 0 && !this.deserializing) {
       this.overChildren = []
@@ -441,7 +460,6 @@ class Editor extends CanvasChild {
     let op = this.addChild(type, coord)
 
     //  Add Inputs and outputs
-    console.log('Creating operator. myNumbers:', this.myNumbers)
     let input1 = this.addNumber(1)
     let input2 = this.addNumber(1)
     let output = this.addNumber(2)
@@ -466,6 +484,44 @@ class Editor extends CanvasChild {
       this._writeURL()
 
     return op
+  }
+  
+  /**
+   * @method addNote
+   *
+   * @param {<String>}	type - should name a class that extends Note class
+   * @param {<Array>}	coord - note position. Defaults to mouse position.
+   *
+   */
+  addNote (type = 'Note', coord = this._coordCanvasToGlobal() ) {
+    const self = this    
+    const transforms = {
+      get scale() {return self.viewScale},
+      worldToFrame: this._worldToFrame.bind(this),
+      frameToWorld: this._frameToWorld.bind(this),
+      screenToFrame: this._screenToFrame.bind(this),
+      frameToScreen: this._frameToScreen.bind(this),
+      worldToScreen: this._worldToScreen.bind(this),
+      screenToWorld: this._screenToWorld.bind(this),
+    }
+
+    let note = this.addChild(type, coord, [transforms])
+
+    this.myNotes.push(note.id)
+
+    //  Start Operators in Move mode
+    if (!this.deserializing) {
+      this.overChildren = []
+      this.overChildren[note.id] = note.id
+    }
+
+    // Save state to URL
+    if (!this.deserializing)
+      this._writeURL()
+    
+    this._refreshNotesLayer()
+
+    return note
   }
 
 
@@ -529,7 +585,7 @@ class Editor extends CanvasChild {
       this.myOperators[childId].forEach((id, i) => {
         this.removeChild(id)
       });
-      this.myOperators[childId] = null
+      delete this.myOperators[childId]
     }
 
     //   Numbers
@@ -540,7 +596,7 @@ class Editor extends CanvasChild {
           if (childId !== wireId) this.removeChild(wireId)
         });
       }
-      this.myNumbers[childId] = null
+      delete this.myNumbers[childId]
     }
 
     //   Wires
@@ -565,15 +621,24 @@ class Editor extends CanvasChild {
       delete this.myWires[childId]
     }
 
-    //  Unselect and Delete
-    if (this.myChildren[childId]) {
-      if (this.selectedNodes.includes(childId)) {
-        let indexOf = this.selectedNodes.indexOf(childId)
-        this.selectedNodes.splice(indexOf, 1)
-      }
-      if (typeof this.myChildren[childId].removeFromEditor === 'function') this.myChildren[childId].removeFromEditor(this)
-      this.myChildren[childId] = null
+    //   Notes
+    if (this.myNotes.includes(childId)) {
+      this.myNotes.splice(this.myNotes.indexOf(childId), 1)
     }
+
+    //  Unselect and Delete
+    if (this.selectedNodes.includes(childId)) {
+      let indexOf = this.selectedNodes.indexOf(childId)
+      this.selectedNodes.splice(indexOf, 1)
+    }
+    
+    if (this.myChildren[childId]) {
+      this.myChildren[childId].removeFromEditor(this)
+      delete this.myChildren[childId]
+    }
+
+    //  Reset mouse state
+    this.mouseState = this.mouseEvents.Idle
   }
 
 
@@ -593,6 +658,134 @@ class Editor extends CanvasChild {
     for (const opId of Object.keys(this.myOperators)) {
       this.myChildren[opId].iterate()
     }
+  }
+
+  /**
+   * @method _cameraToWorld
+   *
+   * Get camera coordinates in worldspace
+   * 
+   * @param {<Number>}	viewX - x view coordinate
+   * @param {<Number>}	viewY - y view coordinate
+   * 
+   * @return {<Array>} the [x, y] worldspace coordinates
+   */
+  _cameraToWorld(viewX = this.viewCenter[0], viewY = this.viewCenter[1]) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const cameraX = (width/2-viewX)/scale
+    const cameraY = (height/2-viewY)/scale
+
+    return [cameraX, cameraY]
+  }
+
+  /**
+   * @method _worldToFrame
+   *
+   * Transform from worldspace to framespace, where top-left is (-1, -1) and bottom-right is (1, 1)
+   * 
+   * @param {<Number>}	worldX - x world coordinate
+   * @param {<Number>}	worldY - y world coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _worldToFrame(worldX, worldY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const [cameraX, cameraY] = this._cameraToWorld()
+
+    const frameX = (worldX-cameraX)*scale*2/width
+    const frameY = (worldY-cameraY)*scale*2/height
+
+    return [frameX, frameY]
+  }
+
+  /**
+   * @method _frameToWorld
+   *
+   * Transform from framespace, where top-left is (-1, -1) and bottom-right is (1, 1), to worldspace
+   * 
+   * @param {<Number>}	frameX - x frame coordinate
+   * @param {<Number>}	frameY - y frame coordinate
+   * 
+   * @return {<Array>} the [x, y] worldspace coordinates
+   */
+  _frameToWorld(frameX, frameY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const [cameraX, cameraY] = this._cameraToWorld()
+
+    const worldX = (frameX*width/2/scale+cameraX)
+    const worldY = (frameY*height/2/scale+cameraY)
+
+    return [worldX, worldY]
+  }
+
+  /**
+   * @method _frameToScreen
+   *
+   * Transform from framespace, where top-left is (-1, -1) and bottom-right is (1, 1), to screenspace (pixels)
+   * 
+   * @param {<Number>}	frameX - x frame coordinate
+   * @param {<Number>}	frameY - y frame coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _frameToScreen(frameX, frameY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const screenX = width*(frameX+1)/2
+    const screenY = height*(frameY+1)/2
+
+    return [screenX, screenY]
+  }
+
+  /**
+   * @method _screenToFrame
+   *
+   * Transform from screenspace (pixels) to framespace, where top-left is (-1, -1) and bottom-right is (1, 1)
+   * 
+   * @param {<Number>}	screenX - x screen coordinate
+   * @param {<Number>}	screenY - y screen coordinate
+   * 
+   * @return {<Array>} the [x, y] framespace coordinates
+   */
+  _screenToFrame(screenX, screenY) {
+    const scale = this.viewScale
+    const width = this.viewWidth
+    const height = this.viewHeight
+
+    const frameX = (screenX/width)*2-1
+    const frameY = (screenY/height)*2-1
+
+    return [frameX, frameY]
+  }
+
+  _screenToWorld(screenX, screenY) {
+    const [frameX, frameY] = this._screenToFrame(screenX, screenY)
+    return this._frameToWorld(frameX, frameY)
+  }
+
+  _worldToScreen(worldX, worldY) {
+    const [frameX, frameY] = this._worldToFrame(worldX, worldY)
+    return this._frameToScreen(frameX, frameY)
+  }
+
+  /**
+   * @method _refreshNotesLayer
+   *
+   * Refresh the notes layer transform to match the viewCenter/viewScale we are using for canvas rendering
+   */
+  _refreshNotesLayer() {
+    this.emit('RefreshNotes')
   }
 
 
@@ -626,6 +819,11 @@ class Editor extends CanvasChild {
 
     //  Save the scale for the next frame
     this.viewScalePrevious = this.viewScale
+
+    // Refresh the transform properties of the notes layer
+    this._refreshNotesLayer()
+
+    this._writeURL()
   }
 
   onChildOut (event) {
@@ -689,15 +887,13 @@ class Editor extends CanvasChild {
     let id = event.detail.id
     let shift = event.detail.shift
 
-    //  Select
-    this.setChildSelected(id, true, false)
-
+    this.setChildSelected(id, true, true)
   }
 
   onChildDeselect (event) {
     let id = event.detail.id
 
-    this.setChildSelected(id, false, false)
+    this.setChildSelected(id, false, true)
   }
 
   onComplexNumberUpdate (event) {
@@ -715,12 +911,10 @@ class Editor extends CanvasChild {
     this.emit('WireUpdate', event.detail)
   }
 
-
-
   /**
    * @method _trueClick
    *
-   * @param {<Obhect>}	event - the event object
+   * @param {<Object>}	event - the event object
    *
    * @return {Boolean}
    *
@@ -740,12 +934,20 @@ class Editor extends CanvasChild {
   /**
    * @method doubleClicked
    *
-   *  We can double click on bound nodes (outputs) to ask for control.
+   *  We can double click on bound nodes (outputs) to ask for control, or on notes to edit them
    *
    * @see https://p5js.org/reference/#/p5/doubleClicked
    */
   doubleClicked (event) {
     if ( this._trueClick(event) ) {
+
+      // Initiate Edit
+      const noteId = this.mousePressVars.over.children.find(v => this.myNotes.includes(v))
+      if (noteId != undefined) {
+        const note = this.myChildren[noteId]
+        this.editingNote = noteId
+        note.beginEdit()
+      }
 
       //  Initiate Reversal
       if ( this.mousePressVars.over.outputs.length > 0 ) {
@@ -917,6 +1119,8 @@ class Editor extends CanvasChild {
             this.viewCenter[1] + event.movementY
           ]
 
+          this._refreshNotesLayer()
+
           detail = {
             viewCenter: this.viewCenter
           }
@@ -952,6 +1156,8 @@ class Editor extends CanvasChild {
               this.setChildSelected( overOpId )
             }
           }
+          
+          this._refreshNotesLayer()
 
           detail = {
             xChange: nowCoordGlobal[0] - thenCoordGlobal[0],
@@ -1050,6 +1256,9 @@ class Editor extends CanvasChild {
     this.mousePressVars.over.inputs = this.overInputs.slice()
     this.mousePressVars.over.outputs = this.overOutputs.slice()
 
+    // If we are editing a note and click anywhere other than that note, stop editing.
+    if (this.editingNote != null && !this.mousePressVars.over.children.includes(this.editingNote))
+      this._endNoteEdit()
   }
 
   /**
@@ -1126,6 +1335,14 @@ class Editor extends CanvasChild {
   keyReleased (event) {
     let keynum = event.keyCode
 
+    // Ignore key events if we are editing a note (unless the key is 'Escape', in which case we end the edit)
+    if (this.editingNote != null) {
+      if (keynum == 27)
+        this._endNoteEdit()
+
+      return
+    }
+
     //  These actions will only apply when mouse is Idle
     if (
       this.mouseState == this.mouseEvents.Idle &&
@@ -1176,7 +1393,6 @@ class Editor extends CanvasChild {
    * @return {<Object>} the full state of the editor represented as an object.
    */
   _serialize() {
-    console.log('My Children', this.myChildren)
     // We only want to serialize naked numbers, since inputs and outputs are serialized within operators
     const nakedNumbers = Object.keys(this.myNumbers).filter(v => {
       const n = this.myChildren[v]
@@ -1189,9 +1405,8 @@ class Editor extends CanvasChild {
 
     const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
 
-    console.log('Operators:', this.myOperators)
-    console.log('Numbers:', this.myNumbers)
-    console.log('Wires:', this.myWires)
+    console.log(`Serializing notes:`, this.myNotes)
+    const notes = this.myNotes.map(v => this.myChildren[v].serialize())
 
     return {
       scale: this.viewScale,
@@ -1199,6 +1414,7 @@ class Editor extends CanvasChild {
       numbers,
       operators,
       wires,
+      notes,
     }
   }
 
@@ -1211,6 +1427,9 @@ class Editor extends CanvasChild {
     this.deserializing = true
 
     this.viewScale = obj.scale
+    this.viewScaleStart = obj.scale
+    this.viewScalePrevious = obj.scale
+    this.viewScaleTarget = obj.scale
     this.viewCenter[0] = obj.center[0]
     this.viewCenter[1] = obj.center[1]
 
@@ -1218,7 +1437,6 @@ class Editor extends CanvasChild {
     const reversedNumbers = []
 
     obj.numbers.forEach(v => {
-      console.log(`Spawning number of value ${v.real}:`, v)
       const number = this.addNumber()
       
       number.deserialize(v)
@@ -1230,7 +1448,6 @@ class Editor extends CanvasChild {
     })
 
     obj.operators.forEach(v => {
-      console.log(`Spawning operator of type ${v.type}:`, v)
       const operator = this.addOperator(v.type)
       
       operator.deserialize(v)
@@ -1248,13 +1465,17 @@ class Editor extends CanvasChild {
     })
 
     obj.wires.forEach(v => {
-      console.log(`Spawning wire between ${v.origin}–${v.target}:`, v)
       const originNumber = this.myChildren[numberMap[v.origin]]
       const targetNumber = this.myChildren[numberMap[v.target]]
       const wire = this.addWire(originNumber.id)
       this.connectWire(targetNumber.id, wire.id)
       
       wire.deserialize(v)
+    })
+
+    obj.notes.forEach(v => {
+      const note = this.addNote()
+      note.deserialize(v)
     })
 
     // For any numbers that were reversed, swap their origin and target. This must happen after wire connections are made.
@@ -1284,9 +1505,9 @@ class Editor extends CanvasChild {
     // Base64 string representation
     const b64 = btoa(enc)
     // URL to write to window
-    const url = location.protocol+'//'+location.hostname+location.pathname+'?'+b64
+    const url = location.protocol+'//'+location.host+location.pathname+'?'+b64
 
-    console.log(obj)
+    // console.log(`Writing serialized state to URL:`, obj)
 
     history.pushState(obj, 'Circuits', url)
   }
@@ -1308,8 +1529,6 @@ class Editor extends CanvasChild {
     const enc = atob(b64)
     const str = decodeURIComponent(enc)
     const obj = JSON.parse(str)
-
-    console.log(str)
 
     return obj
   }

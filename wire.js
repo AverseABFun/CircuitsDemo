@@ -57,6 +57,7 @@ class Wire extends EditorChild {
    */
   removeFromEditor (editor) {
     super.removeFromEditor(editor)
+    console.log(`Removing wire ${this.id}`)
 
     //  Origin - reset connected/target/origin values
     let originId = this.origin.id
@@ -67,19 +68,20 @@ class Wire extends EditorChild {
 
     //  Target - reset connected/target/origin values
     if (this.target) {
+      console.log(`Resetting target on ${this.target.id}`)
       this.target.target = false
-      if (
-        this.target.type == this.target.INPUT ||
-        !this.target.origin
-      ) {
-        this.target.connected = false
-      }
+      this.target.connected = false
+      // if (
+      //   this.target.type == this.target.INPUT ||
+      //   !this.target.origin
+      // ) {
+      //   this.target.connected = false
+      // }
     }
 
     //  Remove origin/target references
     this.origin = null
     this.target = null
-
   }
 
 

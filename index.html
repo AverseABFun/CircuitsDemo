@@ -4,15 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
     <link rel="stylesheet" href="style.css" />
-    <script src="p5.min.js"></script>
-    <script src="vars.js"></script>
-    <script src="canvas.js"></script>
-    <script src="child.js"></script>
-    <script src="number.js"></script>
-    <script src="operator.js"></script>
-    <script src="wire.js"></script>
-    <script src="editor.js"></script>
-    <script src="sketch.js"></script>
   </head>
   <body>
 
@@ -38,6 +29,11 @@
           title="Create new Exponentiator."
           type="button"
           class="create-child"> ^ </button>
+        <button
+          id="create-note"
+          title="Create new Note"
+          type="button"
+          class="create-child"> 📋 </button>
       </div>
 
       <!--
@@ -64,6 +60,7 @@
     </div>
 
     <div id="circuit-canvas" class="active"></div>
+    <div id="notes-layer" class="active"></div>
 
     <div id="info-text" class="hidden">
       <div>
@@ -97,6 +94,17 @@
 
       </div>
     </div>
-
+    
+    <script src="showdown/showdown.min.js"></script>
+    <script src="p5.min.js"></script>
+    <script src="vars.js"></script>
+    <script src="canvas.js"></script>
+    <script src="child.js"></script>
+    <script src="number.js"></script>
+    <script src="operator.js"></script>
+    <script src="wire.js"></script>
+    <script src="note.js"></script>
+    <script src="editor.js"></script>
+    <script src="sketch.js"></script>
   </body>
 </html>
