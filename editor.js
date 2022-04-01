@@ -1405,7 +1405,6 @@ class Editor extends CanvasChild {
 
     const wires = Object.keys(this.myWires).map(v => this.myChildren[v].serialize())
 
-    console.log(`Serializing notes:`, this.myNotes)
     const notes = this.myNotes.map(v => this.myChildren[v].serialize())
 
     return {
