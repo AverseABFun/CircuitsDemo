@@ -1499,10 +1499,10 @@ class Editor extends CanvasChild {
     const obj = this._serialize()
     // Raw string representation
     const str = JSON.stringify(obj)
-    // Encoded string representation
-    const enc = encodeURIComponent(str)
+    // Compressed string representation
+    const lz = LZString.compressToEncodedURIComponent(str)
     // Base64 string representation
-    const b64 = btoa(enc)
+    const b64 = btoa(lz)
     // URL to write to window
     const url = location.protocol+'//'+location.host+location.pathname+'?'+b64
 
@@ -1525,8 +1525,8 @@ class Editor extends CanvasChild {
       return null
     
     const b64 = query.slice(1)
-    const enc = atob(b64)
-    const str = decodeURIComponent(enc)
+    const lz = atob(b64)
+    const str = LZString.decompressFromEncodedURIComponent(lz)
     const obj = JSON.parse(str)
 
     return obj
