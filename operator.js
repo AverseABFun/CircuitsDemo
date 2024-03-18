@@ -647,3 +647,89 @@ class Exponentiator extends Operator {
         }
     }
 }
+
+/**
+ * @class And-iator
+ *
+ */
+class Andiator extends Operator {
+
+    //  colors
+    color = [100,245,100]
+    selectedColor = [130,220,130]
+    reversedColor = [245,100,245]
+    //  text
+    label = "&"
+
+    //  Default values
+    input1Default = 1
+    input2Default = 1
+
+    constructor (x, y, setType = 0) {
+        super(x,y,setType);
+    }
+
+    operate () {
+        let r1 = this.myInput1.getReal();
+        let i1 = this.myInput1.getImaginary();
+        let r2 = this.myInput2.getReal();
+        let i2 = this.myInput2.getImaginary();
+        let rout = this.myOutput.getReal();
+        let iout = this.myOutput.getImaginary();
+        let rprod = (r1 & r2) - (i1 & i2);
+        let iprod = (r1 & i2) + (i1 & r2);
+
+        let leftX, rightX, upperY, lowerY, shiftX, shiftY, movingNode, denominator, rquot, iquot;
+
+        switch (this.mode) {
+    	case this.DEFAULT:
+            //check whether moving left or right better fits constraints...
+            leftX = (rout - searchSize) - rprod;
+            rightX = (rout + searchSize) - rprod;
+            //...same for up or down movement...
+            upperY = (iout + searchSize) - iprod;
+            lowerY = (iout - searchSize) - iprod;
+            //decide whether/where to shift ouput position.
+            movingNode = this.myOutput;
+            break;
+
+        case this.REVERSE1:
+            denominator = (r2 * r2) + (i2 * i2);
+            rquot = ((rout * r2) + (iout * i2)) / denominator;
+            iquot = ((iout * r2) - (rout * i2)) / denominator;
+            leftX = (r1 - searchSize) - rquot;
+            rightX = (r1 + searchSize) - rquot;
+            upperY = (i1 + searchSize) - iquot;
+            lowerY = (i1 - searchSize) - iquot;
+            movingNode = this.myInput1;
+            break;
+
+        case this.REVERSE2:
+            denominator = (r1 * r1) + (i1 * i1);
+            rquot = ((rout * r1) + (iout * i1)) / denominator;
+            iquot = ((iout * r1) - (rout * i1)) / denominator;
+            leftX = (r2 - searchSize) - rquot;
+            rightX = (r2 + searchSize) - rquot;
+            upperY = (i2 + searchSize) - iquot;
+            lowerY = (i2 - searchSize) - iquot;
+            movingNode = this.myInput2;
+            break;
+
+
+    	default:
+    	    // should not get here
+  	}
+
+        shiftX = this.compareShifts(leftX, rightX)
+        shiftY = this.compareShifts(upperY, lowerY)
+        movingNode.shift( shiftX, shiftY );
+
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            type: 'Andiator',
+        }
+    }
+}
